@@ -27,7 +27,7 @@ libopencm3/Makefile:
 	git submodule update --init
 
 libopencm3/lib/libopencm3_%.a: libopencm3/Makefile
-	$(MAKE) -j5 -C libopencm3
+	$(MAKE) TARGETS=stm32/f4 -j5 -C libopencm3
 
 ## the sw
 BOARDS_ELF=$(OD)/stm32/stm32f4discover.elf
