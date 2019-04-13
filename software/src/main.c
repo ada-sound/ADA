@@ -35,9 +35,9 @@ void cs43l22_Shutdown(void)
   GPIO_InitTypeDef  GPIO_InitStruct;
 
   /* Audio reset pin configuration */
-  #define AUDIO_RESET_GPIO_CLK_ENABLE()         __HAL_RCC_GPIOD_CLK_ENABLE()
-  #define AUDIO_RESET_PIN                       GPIO_PIN_4
-  #define AUDIO_RESET_GPIO                      GPIOD
+#define AUDIO_RESET_GPIO_CLK_ENABLE() __HAL_RCC_GPIOD_CLK_ENABLE()
+#define AUDIO_RESET_PIN GPIO_PIN_4
+#define AUDIO_RESET_GPIO GPIOD
   GPIO_InitStruct.Pin = AUDIO_RESET_PIN; 
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
@@ -52,37 +52,25 @@ void cs43l22_Shutdown(void)
 }
 #endif
 
-#include <stdbool.h>
-#include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/rcc.h>
+#include <stdbool.h>
 
-#include <stm32f4_discovery_bsp.h>
-
-#define LITTLE_BIT 800000
+#include <bsp.h>
+#include <tas3251.h>
 
 int main(void) {
-    bool toggle = false;
+    /* init clocks, MMI */
+    if (!system_clock_init() || !mmi_init()) fault();
 
-    led_init(led_red);
-    led_init(led_green);
-    led_init(led_orange);
-    led_init(led_blue);
+    /* power down the codec CS43L22 */
+    if (!cs43l22_shutdown()) fault();
 
-    led_on(led_red);
-    led_on(led_green);
-    led_on(led_orange);
-    led_on(led_blue);
+    /* */
+    if (!tas3251_init()) fault();
 
-    /* Power Down the codec CS43L22 */
-    //cs43l22_Shutdown();
+    fault();
 
-    while(1) {
-        for (int i = 0; i < LITTLE_BIT; i++)
-            __asm__("nop");
-
-        if (toggle=!toggle)
-            led_off(led_blue);
-        else
-            led_on(led_blue);
-    }
+    while (true)
+        ;
 }
