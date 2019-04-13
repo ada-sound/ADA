@@ -30,9 +30,9 @@ libopencm3/lib/libopencm3_%.a: libopencm3/Makefile
 	$(MAKE) TARGETS=stm32/f4 -j5 -C libopencm3
 
 ## the sw
-BOARDS_ELF=$(OD)/stm32/stm32f4discover.elf
-BOARDS_BIN=$(OD)/stm32/stm32f4discover.bin
-BOARDS_HEX=$(OD)/stm32/stm32f4discover.hex
+BOARDS_ELF=$(OD)/ADA.elf
+BOARDS_BIN=$(OD)/ADA.bin
+BOARDS_HEX=$(OD)/ADA.hex
 
 %.bin: %.elf
 	@#printf "  OBJCOPY $(*).bin\n"
@@ -51,9 +51,13 @@ BOARDS_HEX=$(OD)/stm32/stm32f4discover.hex
 all: outdir libopencm3 $(BOARDS_ELF) $(BOARDS_BIN) $(BOARDS_HEX)
 
 outdir:
-	mkdir -p $(OD)/stm32
+	mkdir -p $(OD)
 
 clean:
+	$(MAKE) TARGETS=stm32/f4 clean -C libopencm3
+	$(RM) -r $(OD) $(BOARDS_ELF) $(BOARDS_BIN) $(BOARDS_HEX)
+
+distclean:
 	$(RM) -r $(OD) libopencm3 $(BOARDS_ELF) $(BOARDS_BIN) $(BOARDS_HEX)
 
 $(V).SILENT:
