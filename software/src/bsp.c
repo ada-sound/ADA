@@ -1,7 +1,20 @@
+#include <libopencm3/cm3/scs.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
 
 #include <bsp.h>
+
+/* low-level loop to wait some cpu cycles */
+#define BUSY_WAIT_CYCLES(cycles)            \
+    __asm__ volatile(" mov r0, %[" #cycles  \
+                     "] \n\t"               \
+                     "1: subs r0, #1 \n\t"  \
+                     " bhi 1b \n\t"         \
+                     :                      \
+                     : [cycles] "r"(cycles) \
+                     : "r0")
+static uint32_t _cycles_per_loop;
+static uint32_t _cycles_shift;
 
 static const struct {
     uint32_t port;
@@ -15,7 +28,7 @@ static const struct {
                     {GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO15, RCC_GPIOD}};
 
 /* */
-void led_init(led_t led) {
+static void _led_init(led_t led) {
     rcc_periph_clock_enable(_leds[led].clken);
     gpio_mode_setup(_leds[led].port, _leds[led].mode, _leds[led].pull_up_down, _leds[led].gpios);
 }
@@ -24,33 +37,37 @@ void led_on(led_t led) { gpio_set(_leds[led].port, _leds[led].gpios); }
 
 void led_off(led_t led) { gpio_clear(_leds[led].port, _leds[led].gpios); }
 
-#define STM32_CYCLES_PER_LOOP 3
-#define STM32_LOST_CYCLES_ONE_TIME 8
-void busy_delay_ms(uint32_t ms) {
-    uint32_t cycles_to_wait = (ms * (rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ].ahb_frequency / 1000)) /
-                                  STM32_CYCLES_PER_LOOP -
-                              STM32_LOST_CYCLES_ONE_TIME;
-
-    __asm__ volatile(
-        " mov r0, %[cycles_to_wait] \n\t"
-        "1: subs r0, #1 \n\t"
-        " bhi 1b \n\t"
-        :
-        : [cycles_to_wait] "r"(cycles_to_wait)
-        : "r0");
+static uint32_t _ms_to_cycles(uint32_t ms) {
+    return (ms * (rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ].ahb_frequency / 1000)) / _cycles_per_loop -
+           _cycles_shift;
 }
 
-#if 0
-#define start_timer() *((volatile uint32_t*)0xE0001000) = 0x40000001  // Enable CYCCNT register
-#define stop_timer() *((volatile uint32_t*)0xE0001000) = 0x40000000   // Disable CYCCNT register
-#define get_timer() *((volatile uint32_t*)0xE0001004)  // Get value from CYCCNT register
-uint32_t measure_cycles(uint32_t loops) {
+static uint32_t _us_to_cycles(uint32_t us) {
+    return (us * rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ].ahb_frequency) / _cycles_per_loop -
+           _cycles_shift;
+}
+
+void busy_delay_ms(uint32_t ms) {
+    uint32_t cycles_to_wait =
+        (ms * (rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ].ahb_frequency / 1000)) / _cycles_per_loop -
+        _cycles_shift;
+
+    BUSY_WAIT_CYCLES(cycles_to_wait);
+}
+
+static inline void _start_cyccnt(void) { SCS_DWT_CTRL = 0x40000001; }
+
+static inline void _stop_cyccnt(void) { SCS_DWT_CTRL = 0x40000000; }
+
+static inline uint32_t _get_cyccnt(void) { return SCS_DWT_CYCCNT; }
+
+void _calibrate_delay_cycles(uint32_t* cycles_per_loop, uint32_t* cycles_more) {
+    uint32_t loops = 1000;
     uint32_t it1, it2;
     uint32_t ret;
 
-    start_timer();
-
-    it1 = get_timer();
+    _start_cyccnt();
+    it1 = _get_cyccnt();
 
     __asm__ volatile(
         "mov r0, %[loops] \n\t"
@@ -60,40 +77,14 @@ uint32_t measure_cycles(uint32_t loops) {
         : [loops] "r"(loops)
         : "r0");
 
-    it2 = get_timer();
+    it2 = _get_cyccnt();
+    _stop_cyccnt();
 
-    stop_timer();
-
-    ret = it2 - it1;
-    return ret;
-
-    /*
-    loops = 1: ret = 11
-    loops = 1000: ret = 3008
-    loops = 10000: ret = 30008
-    loops = 100000: ret = 300008
-    -> the __asm__ blocks worths (3 * loops) + 8
-    */
-}
-#endif
-
-bool system_clock_init(void) {
-    rcc_clock_setup_hse_3v3(&rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ]);
-    return true;
+    *cycles_per_loop = (it2 - it1) / loops;
+    *cycles_more = (it2 - it1) - (*cycles_per_loop) * loops;
 }
 
-bool mmi_init() {
-    led_init(led_blue);
-    led_init(led_red);
-    led_init(led_green);
-    led_init(led_orange);
-
-    led_on(led_blue);
-
-    return true;
-}
-
-bool cs43l22_shutdown(void) {
+bool _cs43l22_shutdown(void) {
     gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO4);
 
     /* power down the codec */
@@ -105,14 +96,38 @@ bool cs43l22_shutdown(void) {
     return true;
 }
 
+bool bsp_init(void) {
+    /* calibrate delay cycles */
+    _calibrate_delay_cycles(&_cycles_per_loop, &_cycles_shift);
+
+    /* init board clocks */
+    rcc_clock_setup_hse_3v3(&rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ]);
+
+    /* leds */
+    _led_init(led_blue);
+    _led_init(led_red);
+    _led_init(led_green);
+    _led_init(led_orange);
+
+    /* switch off the codec cs43l22 */
+    return _cs43l22_shutdown();
+}
+
+bool mmi_init() {
+    led_on(led_blue);
+    return true;
+}
+
 void fault() {
     bool state = true;
+
+    /* bye bye */
     while (true) {
         if (state)
             led_on(led_red);
         else
             led_off(led_red);
         state = !state;
-        busy_delay_ms(1000);
+        busy_delay_ms(500);
     }
 }

@@ -60,11 +60,8 @@ void cs43l22_Shutdown(void)
 #include <tas3251.h>
 
 int main(void) {
-    /* init clocks, MMI */
-    if (!system_clock_init() || !mmi_init()) fault();
-
-    /* power down the codec CS43L22 */
-    if (!cs43l22_shutdown()) fault();
+    /* init bsp and MMI */
+    if (!bsp_init() || !mmi_init()) fault();
 
     /* */
     if (!tas3251_init()) fault();
