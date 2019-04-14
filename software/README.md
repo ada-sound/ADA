@@ -6,18 +6,17 @@ cf https://launchpad.net/gcc-arm-embedded
 
 cf http://openocd.org/
 
-Run as root:
 
 ```bash
 # install a gcc toolchain
-add-apt-repository ppa:team-gcc-arm-embedded/ppa
-apt update
-apt install gcc-arm-embedded
+sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
+sudo apt update
+sudo apt install gcc-arm-embedded
 
 # install openocd
-apt install openocd
-su
-echo -e "8c8\n< hla_vid_pid 0x0483 0x3748\n---\n> hla_vid_pid 0x0483 0x374B\n" | patch -p1 /usr/share/openocd/scripts/interface/stlink-v2.cfg
+sudo apt install openocd
+# correct the wrong pid of the stlink-v2.0 interface
+sudo sed -i "s/0x3748/0x374B/g" /usr/share/openocd/scripts/interface/stlink-v2.cfg
 ```
 
 # build
