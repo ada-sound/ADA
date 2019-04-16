@@ -1,48 +1,11 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
+#include <stdlib.h>
+
 #include "i2s.h"
 #include "tas3251.h"
 
 #if 0
-/**
-  * @brief  Clock Config.
-  * @param  hi2s: might be required to set audio peripheral predivider if any.
-  * @param  AudioFreq: Audio frequency used to play the audio stream.
-  * @note   This API is called by BSP_AUDIO_OUT_Init() and BSP_AUDIO_OUT_SetFrequency()
-  *         Being __weak it can be overwritten by the application     
-  * @param  Params : pointer on additional configuration parameters, can be NULL.
-  */
-__weak void BSP_AUDIO_OUT_ClockConfig(I2S_HandleTypeDef *hi2s, uint32_t AudioFreq, void *Params) {
-    RCC_PeriphCLKInitTypeDef rccclkinit;
-    uint8_t index = 0, freqindex = 0xFF;
-
-    for (index = 0; index < 8; index++) {
-        if (I2SFreq[index] == AudioFreq) {
-            freqindex = index;
-        }
-    }
-    /* Enable PLLI2S clock */
-    HAL_RCCEx_GetPeriphCLKConfig(&rccclkinit);
-    /* PLLI2S_VCO Input = HSE_VALUE/PLL_M = 1 Mhz */
-    if ((freqindex & 0x7) == 0) {
-        /* I2S clock config 
-    PLLI2S_VCO = f(VCO clock) = f(PLLI2S clock input) � (PLLI2SN/PLLM)
-    I2SCLK = f(PLLI2S clock output) = f(VCO clock) / PLLI2SR */
-        rccclkinit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
-        rccclkinit.PLLI2S.PLLI2SN = I2SPLLN[freqindex];
-        rccclkinit.PLLI2S.PLLI2SR = I2SPLLR[freqindex];
-        HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
-    } else {
-        /* I2S clock config 
-    PLLI2S_VCO = f(VCO clock) = f(PLLI2S clock input) � (PLLI2SN/PLLM)
-    I2SCLK = f(PLLI2S clock output) = f(VCO clock) / PLLI2SR */
-        rccclkinit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
-        rccclkinit.PLLI2S.PLLI2SN = 258;
-        rccclkinit.PLLI2S.PLLI2SR = 3;
-        HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
-    }
-}
-
 #define I2S3_MCK_CLK_ENABLE() __HAL_RCC_GPIOC_CLK_ENABLE()
 #define __HAL_RCC_GPIOC_CLK_ENABLE()                          \
     do {                                                      \
@@ -160,61 +123,12 @@ static uint8_t I2S3_Init(uint32_t AudioFreq)
 }
 #endif
 
-#define I2S3_CLK_ENABLE() rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_SPI3EN)
-
-#define I2S3_SCK_SD_CLK_ENABLE() rcc_periph_clock_enable(RCC_GPIOC)
-#define I2S3_SCK_SD_GPIO_PORT GPIOC
-#define I2S3_SCK_PIN GPIO10
-#define I2S3_SD_PIN GPIO12
-#define I2S3_SCK_SD_WS_AF GPIO_AF6
-
-#define I2S3_WS_CLK_ENABLE() rcc_periph_clock_enable(RCC_GPIOA)
-#define I2S3_WS_PIN GPIO4
-#define I2S3_WS_GPIO_PORT GPIOA
-
-#define I2S3_MCK_CLK_ENABLE() rcc_periph_clock_enable(RCC_GPIOC)
-#define I2S3_MCK_GPIO_PORT GPIOC
-#define I2S3_MCK_PIN GPIO7
-
-bool tas3251_init(void) {
-    /* Enable I2S3 clock */
-    I2S3_CLK_ENABLE();
-
-    /* I2S3 SCK, SD pins config */
-    I2S3_SCK_SD_CLK_ENABLE();
-    gpio_mode_setup(I2S3_SCK_SD_GPIO_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
-                    I2S3_SCK_PIN | I2S3_SD_PIN);
-    gpio_set_output_options(I2S3_SCK_SD_GPIO_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ,
-                            I2S3_SCK_PIN | I2S3_SD_PIN);
-    gpio_set_af(I2S3_SCK_SD_GPIO_PORT, I2S3_SCK_SD_WS_AF, I2S3_SCK_PIN | I2S3_SD_PIN);
-
-    /* I2S3 WS pin config */
-    I2S3_WS_CLK_ENABLE();
-    gpio_mode_setup(I2S3_WS_GPIO_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, I2S3_WS_PIN);
-    gpio_set_output_options(I2S3_WS_GPIO_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, I2S3_WS_PIN);
-    gpio_set_af(I2S3_WS_GPIO_PORT, I2S3_SCK_SD_WS_AF, I2S3_WS_PIN);
-
-    /* I2S3 MCK pin config */
-    I2S3_MCK_CLK_ENABLE();
-    gpio_mode_setup(I2S3_MCK_GPIO_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, I2S3_MCK_PIN);
-    gpio_set_output_options(I2S3_MCK_GPIO_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, I2S3_MCK_PIN);
-    gpio_set_af(I2S3_MCK_GPIO_PORT, I2S3_SCK_SD_WS_AF, I2S3_MCK_PIN);
-
-    /* Enable the I2S DMA clock */
-    //I2S3_DMAx_CLK_ENABLE();
-
-    /**
-     * I2S3_Init
-     */
-
-    /*----------------------- SPIx I2SCFGR & I2SPR Configuration ----------------*/
-    /* Clear I2SMOD, I2SE, I2SCFG, PCMSYNC, I2SSTD, CKPOL, DATLEN and CHLEN bits */
-    /*CLEAR_BIT(hi2s->Instance->I2SCFGR,
-              (SPI_I2SCFGR_CHLEN | SPI_I2SCFGR_DATLEN | SPI_I2SCFGR_CKPOL | SPI_I2SCFGR_I2SSTD |
-               SPI_I2SCFGR_PCMSYNC | SPI_I2SCFGR_I2SCFG | SPI_I2SCFGR_I2SE | SPI_I2SCFGR_I2SMOD));
-    hi2s->Instance->I2SPR = 0x0002U;*/
-
-    return true;
+bool tas3251_init(uint32_t i2c_device_addr) {
+    /* PLL clock is set depending by the AudioFreq (44.1khz vs 48khz groups) */
+    uint32_t AudioFreq = 48000;
+    BSP_AUDIO_OUT_ClockConfig(AudioFreq);
+    BSP_AUDIO_OUT_MspInit();
+    return I2S_Init();
 }
 
 bool tas3251_set_output_freq(void) { return true; }

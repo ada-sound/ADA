@@ -64,7 +64,7 @@ int main(void) {
     if (!bsp_init() || !mmi_init()) fault();
 
     /* */
-    if (!tas3251_init()) fault();
+    if (!tas3251_init(0)) fault();
 
     fault();
 
