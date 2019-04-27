@@ -13,8 +13,11 @@ The first requirements are:
 - auto-select source
 - minimal MMI: power-on pushbutton, volume rotactor, audio-source rotactor, LCD panel, status LED
 
-The board must be seen by a computer as a 2 channels 96kHz (or higher) sound card
-It shall allow these lossless non-compressed audio formats: WAV, DCD, FLAC, ALAC, AIFF
+The board must be seen by a computer as a 2 channels 192kHz (or higher) sound card
+
+It shall allow these lossless non-compressed audio formats
+- AAC, WMA, OGG, WMA-L, ALAC, OPUS
+- high resolution MQA, DSD, FLAC, WAV, AIFF
 
 For later:
 - Bluetooth AptX
