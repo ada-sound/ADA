@@ -24,9 +24,5 @@ For later:
 - HDMI + CEC (TV remote-> amp)
 - HDMI + HEC (TV ethernet-> amp)
 
-# the POC - proof of concept
-
-Made from
-- a [TAS3251](http://www.ti.com/product/TAS3251) out from a [TAS3251EVM eval board](http://www.ti.com/tool/TAS3251EVM)
-- a [STM32F4](https://www.st.com/en/microcontrollers-microprocessors/stm32f4-series.html) out from a [STM32F4 Discovery board](https://www.st.com/en/evaluation-tools/stm32f4discovery.html)
-- some goodies like a rotactor, an LCD panel etc.
+# first mockup
+see [the mockup description here](mockup.md)
