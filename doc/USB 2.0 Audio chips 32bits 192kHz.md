@@ -1,0 +1,4 @@
+- VIA Envy VT1730 https://www.viatech.com/en/silicon/legacy/audio/vt1730/
+- XMOS (up to 384kHz)
+- Amanero (ATSAM3U1CA)
+- Pavouk (AT32UC3A3) http://www.pavouk.org/hw/audiosystem20/en_at32uc3a3256usbi2s.html
