@@ -25,4 +25,4 @@ For later:
 - HDMI + HEC (TV ethernet-> amp)
 
 # first mockup
-see [the mockup description here](mockup.md)
+see [the mockup description here](hardware/mockup/README.md)

@@ -35,3 +35,22 @@ I2S3 WS  PA4  +-----------+ J9-11 LRCLK
   - **init the amp**
     - disabling the CS43L22: set and keep PD4 low on the STM32F4-Discovery
     - starting the amp: cf [SLASEG6A](tas3251.pdf) p47
+
+6. **Pre-sw build**
+
+  A pre-project based on SW4STM + STMCubeF4 exists!
+
+  - get SW4STM (Ac6 tools) then STM32CubeF4 1.24.0
+
+  - patch STM32Cube_FW_F4_V1.24.0 to add TAS3251
+
+    ```
+    unzip en.STM32Cube_FW_F4_V1.24.0.zip
+    cd STM32Cube_FW_F4_V1.24.0 && patch --binary -p1 < ../ada_STM32CubeF4_tas3251.patch
+    ```
+
+  - Run SW4STM then import the STM32F4-Discovery BSP project
+      - Import -> Existing Projects into Workspace: choose STM32Cube_FW_F4_V1.24.0/Projects/STM32F4-Discovery/Examples/BSP/SW4STM32/
+  - Add TAS3251
+    - add the symbol: Properties-> C/C++ Build -> Settings -> MCO GCC COmpiler -> Preprocessor : define symbol TAS3251
+    - Add tas3251.c in the project tree in Drivers/BSP/Components close to cs43l22.c [sorry I didn't do it in the patch]
