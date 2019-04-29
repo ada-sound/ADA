@@ -6,7 +6,7 @@ cf https://launchpad.net/gcc-arm-embedded
 
 cf http://openocd.org/
 
-
+## deb world
 ```bash
 # install a gcc toolchain
 sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
@@ -15,6 +15,17 @@ sudo apt install gcc-arm-embedded
 
 # install openocd
 sudo apt install openocd
+# correct the wrong pid of the stlink-v2.0 interface
+sudo sed -i "s/0x3748/0x374B/g" /usr/share/openocd/scripts/interface/stlink-v2.cfg
+```
+
+## rpm world
+```bash
+# install a gcc toolchain
+sudo dnf install arm-none-eabi-gcc-cs arm-none-eabi-newlib
+
+# install openocd
+sudo dnf install openocd
 # correct the wrong pid of the stlink-v2.0 interface
 sudo sed -i "s/0x3748/0x374B/g" /usr/share/openocd/scripts/interface/stlink-v2.cfg
 ```
