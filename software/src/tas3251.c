@@ -1,7 +1,11 @@
+#include <libopencm3/cm3/nvic.h>
+#include <libopencm3/cm3/scb.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/i2c.h>
 #include <libopencm3/stm32/rcc.h>
 #include <stdlib.h>
 
+#include "i2c.h"
 #include "i2s.h"
 #include "tas3251.h"
 
@@ -128,7 +132,12 @@ bool tas3251_init(uint32_t i2c_device_addr) {
     uint32_t AudioFreq = 48000;
     BSP_AUDIO_OUT_ClockConfig(AudioFreq);
     BSP_AUDIO_OUT_MspInit();
-    return I2S_Init();
+    if (!I2S_Init()) return false;
+
+    /* I2C */
+    if (!i2c_init()) return false;
+
+    return true;
 }
 
 bool tas3251_set_output_freq(void) { return true; }

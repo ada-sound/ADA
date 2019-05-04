@@ -5,7 +5,7 @@ OBJCOPY=$(PREFIX)objcopy
 OD=bin
 
 ## compilation rules
-SRC=src/main.c src/bsp.c src/tas3251.c src/i2s.c
+SRC=src/main.c src/bsp.c src/tas3251.c src/i2s.c src/i2c.c
 
 #SFLAGS= --static -nostartfiles -std=c11 -g3 -Os
 SFLAGS= --static -nostartfiles -std=c11 -g3 -O0
