@@ -275,7 +275,7 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack() {
         AudioCurrentPos += transmit_size;
     } else {
         /* Call DMA Stop to disable DMA stream before stopping codec */
-        HAL_I2S_DMAStop(&hAudioOutI2s);
+        //HAL_I2S_DMAStop(&hAudioOutI2s);
 
         /* reset to begining */
         BSP_AUDIO_OUT_Play(AudioPos, AudioSizeBytes);

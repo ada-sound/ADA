@@ -1,5 +1,9 @@
 #include <stm32f4xx_hal.h>
 #include "bsp.h"
+#include "usb_audio.h"
+#include "usbd_audio_if.h"
+#include "usbd_core.h"
+#include "usbd_desc.h"
 
 #define LEDn 4
 
@@ -83,13 +87,9 @@ void _bsp_led_init(Led_TypeDef Led) {
     HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET);
 }
 
-static void _bsp_led_on(Led_TypeDef Led) {
-    HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_SET);
-}
+static void _bsp_led_on(Led_TypeDef Led) { HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_SET); }
 
-static void _bsp_led_off(Led_TypeDef Led) {
-    HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET);
-}
+static void _bsp_led_off(Led_TypeDef Led) { HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET); }
 
 static void _system_clock_config(void) {
     RCC_ClkInitTypeDef RCC_ClkInitStruct;
@@ -170,6 +170,26 @@ bool mmi_init() {
     _bsp_led_on(BLUE);
 
     return true;
+}
+
+USBD_HandleTypeDef USBD_Device;
+
+bool usb_init(void) {
+    /* Init Device Library */
+    USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
+
+    /* Add Supported Class */
+    USBD_RegisterClass(&USBD_Device, USBD_AUDIO_CLASS);
+
+    /* Add Interface callbacks for AUDIO Class */
+    USBD_AUDIO_RegisterInterface(&USBD_Device, &audio_class_interface);
+
+    return true;
+}
+
+bool usb_start(void) {
+    /* Start Device Process */
+    return USBD_Start(&USBD_Device) == USBD_OK;
 }
 
 void fault() {

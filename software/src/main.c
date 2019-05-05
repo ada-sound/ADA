@@ -3,11 +3,10 @@
 
 int main(void) {
     /* init bsp and MMI */
-    if (!bsp_init() || !mmi_init()) fault();
+    if (!bsp_init() || !mmi_init() || !usb_init()) fault();
 
     /* */
     if (!tas3251_init(0X94)) fault();
 
-    while (true)
-        ;
+    if (!usb_start()) fault();
 }
