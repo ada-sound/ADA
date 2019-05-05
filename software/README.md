@@ -18,11 +18,16 @@ sudo apt install openocd
 # correct the wrong pid of the stlink-v2.0 interface
 sudo sed -i "s/0x3748/0x374B/g" /usr/share/openocd/scripts/interface/stlink-v2.cfg
 ```
+http://stm32f4-discovery.net/2015/07/all-stm32-hal-libraries/#
 
 ## rpm world
 ```bash
 # install a gcc toolchain
 sudo dnf install arm-none-eabi-gcc-cs arm-none-eabi-newlib
+
+# install arm-none-eabi-gdb from https://apps.fedoraproject.org/packages/
+wget https://kojipkgs.fedoraproject.org//packages/arm-none-eabi-gdb/7.6.2/4.fc24/x86_64/arm-none-eabi-gdb-7.6.2-4.fc24.x86_64.rpm
+sudo dnf install ./arm-none-eabi-gdb-7.6.2-4.fc24.x86_64.rpm
 
 # install openocd
 sudo dnf install openocd

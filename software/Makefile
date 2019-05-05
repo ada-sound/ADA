@@ -1,38 +1,57 @@
+## output
+OUTPUT_NAME=ada
+OUTPUT_DIR=bin
+
 ## toolchain
 PREFIX?=arm-none-eabi-
 CC=$(PREFIX)gcc
 OBJCOPY=$(PREFIX)objcopy
-OD=bin
+STM32CUBE=src/STM32Cube_FW_F4_V1.24.0
+STM32CUBE_ARCHIVE=src/STM32Cube_FW_F4_V1.24.0.extract.tar.bz2
+HAL=$(STM32CUBE)/Drivers/STM32F4xx_HAL_Driver
+
+## sources and headers
+SRC=src/startup_stm32f407xx.s \
+	src/system_stm32f4xx.c \
+	src/main.c \
+	src/bsp.c \
+	src/tas3251.c \
+	src/audio_sample.c \
+	$(HAL)/Src/stm32f4xx_hal.c \
+	$(HAL)/Src/stm32f4xx_hal_cortex.c \
+	$(HAL)/Src/stm32f4xx_hal_dma.c \
+	$(HAL)/Src/stm32f4xx_hal_gpio.c \
+	$(HAL)/Src/stm32f4xx_hal_i2c.c \
+	$(HAL)/Src/stm32f4xx_hal_i2s.c \
+	$(HAL)/Src/stm32f4xx_hal_i2s_ex.c \
+	$(HAL)/Src/stm32f4xx_hal_rcc.c \
+	$(HAL)/Src/stm32f4xx_hal_rcc_ex.c \
+	$(HAL)/Src/stm32f4xx_hal_spi.c
+
+INC=-I./src
+INC+=-I$(STM32CUBE)/Drivers/STM32F4xx_HAL_Driver/Inc
+INC+=-I$(STM32CUBE)/Drivers/CMSIS/Device/ST/STM32F4xx/Include
+INC+=-I$(STM32CUBE)/Drivers/BSP/Components/Common
+INC+=-I$(STM32CUBE)/Drivers/CMSIS/Include
+
+LINKER_FILE=src/STM32F407VG_FLASH.ld
 
 ## compilation rules
-SRC=src/main.c src/bsp.c src/tas3251.c src/i2s.c src/i2c.c
+CFLAGS_CORTEX_M4=-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
+GCCFLAGS=--static -nostartfiles -std=c11 -Wall
+GCCFLAGS+=-fno-common -ffunction-sections -fdata-sections
+#GCCDEBUGFLAGS=-g3 -O0 -DPENDSV_DEBUG
+GCCDEBUGFLAGS=-g3 -Os -DPENDSV_DEBUG
+#GCCDEBUGFLAGS=-Os -DNDEBUG
+CFLAGS=$(INC) -D STM32F407xx $(CFLAGS_CORTEX_M4) $(GCCFLAGS) $(GCCDEBUGFLAGS)
 
-#SFLAGS= --static -nostartfiles -std=c11 -g3 -Os
-SFLAGS= --static -nostartfiles -std=c11 -g3 -O0
-SFLAGS+= -fno-common -ffunction-sections -fdata-sections
-SFLAGS+= -I./src
-SFLAGS+= -I./libopencm3/include -L./libopencm3/lib
-LFLAGS+=-Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
-M4FH_FLAGS=$(SFLAGS) -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-LFLAGS_STM32=$(LFLAGS) $(SRC) -T src/ld.stm32.basic
-STM32F4_CFLAGS=$(M4FH_FLAGS) -DSTM32F4 $(LFLAGS_STM32) -lopencm3_stm32f4
+LFLAGS=-Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
+LFLAGS+=$(SRC) -T $(LINKER_FILE)
 
-## libopencm3
-libopencm3:
-	@echo "Cloning libopencm3 submodule"
-	[ ! -d libopencm3 ] && git clone git@github.com:libopencm3/libopencm3.git
-
-libopencm3/Makefile:
-	@echo "Initializing libopencm3 submodule"
-	git submodule update --init
-
-libopencm3/lib/libopencm3_%.a: libopencm3/Makefile
-	$(MAKE) TARGETS=stm32/f4 -j5 -C libopencm3
-
-## the sw
-BOARDS_ELF=$(OD)/ADA.elf
-BOARDS_BIN=$(OD)/ADA.bin
-BOARDS_HEX=$(OD)/ADA.hex
+## the project
+ELF=$(OUTPUT_DIR)/$(OUTPUT_NAME).elf
+BIN=$(OUTPUT_DIR)/$(OUTPUT_NAME).bin
+HEX=$(OUTPUT_DIR)/$(OUTPUT_NAME).hex
 
 %.bin: %.elf
 	@#printf "  OBJCOPY $(*).bin\n"
@@ -42,22 +61,24 @@ BOARDS_HEX=$(OD)/ADA.hex
 	@#printf "  OBJCOPY $(*).hex\n"
 	$(OBJCOPY) -Oihex $(*).elf $(*).hex
 
-%.elf: $(SRC) libopencm3/lib/libopencm3_stm32f4.a
-	@echo "  stm32f4 -> Creating $(*).elf"
-	$(CC) $(STM32F4_CFLAGS) -o $(*).elf
+%.elf: $(SRC)
+	@echo "Creating $(*).elf"
+	$(CC) $(CFLAGS) $(LFLAGS) -o $(*).elf
 
 ## generic targets
 .DEFAULT_GOAL := all
-all: outdir libopencm3 $(BOARDS_ELF) $(BOARDS_BIN) $(BOARDS_HEX)
+all: outdir stm32_hal $(ELF) $(BIN) $(HEX)
 
 outdir:
-	mkdir -p $(OD)
+	mkdir -p $(OUTPUT_DIR)
+
+stm32_hal:
+	@if [ ! -d $(STM32CUBE) ]; then echo Extracting STM32 HAL and LL; tar xf $(STM32CUBE_ARCHIVE) -C src; fi
 
 clean:
-	$(MAKE) TARGETS=stm32/f4 clean -C libopencm3
-	$(RM) -r $(OD) $(BOARDS_ELF) $(BOARDS_BIN) $(BOARDS_HEX)
+	$(RM) -r $(OUTPUT_DIR) $(ELF) $(BIN) $(HEX)
 
 distclean:
-	$(RM) -r $(OD) libopencm3 $(BOARDS_ELF) $(BOARDS_BIN) $(BOARDS_HEX)
+	$(RM) -r $(OUTPUT_DIR) $(STM32CUBE) $(ELF) $(BIN) $(HEX)
 
 $(V).SILENT:

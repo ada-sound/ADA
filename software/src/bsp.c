@@ -1,133 +1,209 @@
-#include <libopencm3/cm3/scs.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/rcc.h>
+#include <stm32f4xx_hal.h>
+#include "bsp.h"
 
-#include <bsp.h>
+#define LEDn 4
 
-/* low-level loop to wait some cpu cycles */
-#define BUSY_WAIT_CYCLES(cycles)            \
-    __asm__ volatile(" mov r0, %[" #cycles  \
-                     "] \n\t"               \
-                     "1: subs r0, #1 \n\t"  \
-                     " bhi 1b \n\t"         \
-                     :                      \
-                     : [cycles] "r"(cycles) \
-                     : "r0")
-static uint32_t _cycles_per_loop;
-static uint32_t _cycles_shift;
+#define LED4_PIN GPIO_PIN_12
+#define LED4_GPIO_PORT GPIOD
+#define LED4_GPIO_CLK_ENABLE() __HAL_RCC_GPIOD_CLK_ENABLE()
+#define LED4_GPIO_CLK_DISABLE() __HAL_RCC_GPIOD_CLK_DISABLE()
 
-static const struct {
-    uint32_t port;
-    uint8_t mode;
-    uint8_t pull_up_down;
-    uint16_t gpios;
-    enum rcc_periph_clken clken;
-} _leds[led_max] = {{GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12, RCC_GPIOD},
-                    {GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO13, RCC_GPIOD},
-                    {GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO14, RCC_GPIOD},
-                    {GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO15, RCC_GPIOD}};
+#define LED3_PIN GPIO_PIN_13
+#define LED3_GPIO_PORT GPIOD
+#define LED3_GPIO_CLK_ENABLE() __HAL_RCC_GPIOD_CLK_ENABLE()
+#define LED3_GPIO_CLK_DISABLE() __HAL_RCC_GPIOD_CLK_DISABLE()
+
+#define LED5_PIN GPIO_PIN_14
+#define LED5_GPIO_PORT GPIOD
+#define LED5_GPIO_CLK_ENABLE() __HAL_RCC_GPIOD_CLK_ENABLE()
+#define LED5_GPIO_CLK_DISABLE() __HAL_RCC_GPIOD_CLK_DISABLE()
+
+#define LED6_PIN GPIO_PIN_15
+#define LED6_GPIO_PORT GPIOD
+#define LED6_GPIO_CLK_ENABLE() __HAL_RCC_GPIOD_CLK_ENABLE()
+#define LED6_GPIO_CLK_DISABLE() __HAL_RCC_GPIOD_CLK_DISABLE()
+
+#define LEDx_GPIO_CLK_ENABLE(__INDEX__) \
+    do {                                \
+        if ((__INDEX__) == 0)           \
+            LED4_GPIO_CLK_ENABLE();     \
+        else if ((__INDEX__) == 1)      \
+            LED3_GPIO_CLK_ENABLE();     \
+        else if ((__INDEX__) == 2)      \
+            LED5_GPIO_CLK_ENABLE();     \
+        else if ((__INDEX__) == 3)      \
+            LED6_GPIO_CLK_ENABLE();     \
+    } while (0)
+
+#define LEDx_GPIO_CLK_DISABLE(__INDEX__) \
+    do {                                 \
+        if ((__INDEX__) == 0)            \
+            LED4_GPIO_CLK_DISABLE();     \
+        else if ((__INDEX__) == 1)       \
+            LED3_GPIO_CLK_DISABLE();     \
+        else if ((__INDEX__) == 2)       \
+            LED5_GPIO_CLK_DISABLE();     \
+        else if ((__INDEX__) == 3)       \
+            LED6_GPIO_CLK_DISABLE();     \
+    } while (0)
+
+/* CS43L22 (the STM32F4-Disco audio codec) reset pin */
+#define CS43L22_RESET_GPIO_CLK_ENABLE() __HAL_RCC_GPIOD_CLK_ENABLE()
+#define CS43L22_RESET_PIN GPIO_PIN_4
+#define CS43L22_RESET_GPIO GPIOD
+
+typedef enum {
+    LED4 = 0,
+    GREEN = LED4,
+    LED3 = 1,
+    ORANGE = LED3,
+    LED5 = 2,
+    RED = LED5,
+    LED6 = 3,
+    BLUE = LED6
+} Led_TypeDef;
+
+GPIO_TypeDef* GPIO_PORT[LEDn] = {LED4_GPIO_PORT, LED3_GPIO_PORT, LED5_GPIO_PORT, LED6_GPIO_PORT};
+const uint16_t GPIO_PIN[LEDn] = {LED4_PIN, LED3_PIN, LED5_PIN, LED6_PIN};
 
 /* */
-static void _led_init(led_t led) {
-    rcc_periph_clock_enable(_leds[led].clken);
-    gpio_mode_setup(_leds[led].port, _leds[led].mode, _leds[led].pull_up_down, _leds[led].gpios);
+void _bsp_led_init(Led_TypeDef Led) {
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    /* Enable the GPIO_LED Clock */
+    LEDx_GPIO_CLK_ENABLE(Led);
+
+    /* Configure the GPIO_LED pin */
+    GPIO_InitStruct.Pin = GPIO_PIN[Led];
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+
+    HAL_GPIO_Init(GPIO_PORT[Led], &GPIO_InitStruct);
+    HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET);
 }
 
-void led_on(led_t led) { gpio_set(_leds[led].port, _leds[led].gpios); }
-
-void led_off(led_t led) { gpio_clear(_leds[led].port, _leds[led].gpios); }
-
-static uint32_t _ms_to_cycles(uint32_t ms) {
-    return (ms * (rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ].ahb_frequency / 1000)) / _cycles_per_loop -
-           _cycles_shift;
+static void _bsp_led_on(Led_TypeDef Led) {
+    HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_SET);
 }
 
-static uint32_t _us_to_cycles(uint32_t us) {
-    return (us * rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ].ahb_frequency) / _cycles_per_loop -
-           _cycles_shift;
+static void _bsp_led_off(Led_TypeDef Led) {
+    HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET);
 }
 
-void busy_delay_ms(uint32_t ms) {
-    uint32_t cycles_to_wait =
-        (ms * (rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ].ahb_frequency / 1000)) / _cycles_per_loop -
-        _cycles_shift;
+static void _system_clock_config(void) {
+    RCC_ClkInitTypeDef RCC_ClkInitStruct;
+    RCC_OscInitTypeDef RCC_OscInitStruct;
 
-    BUSY_WAIT_CYCLES(cycles_to_wait);
+    /* Enable Power Control clock */
+    __HAL_RCC_PWR_CLK_ENABLE();
+
+    /* The voltage scaling allows optimizing the power consumption when the device is 
+     clocked below the maximum system frequency, to update the voltage scaling value 
+     regarding system frequency refer to product datasheet.  */
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+    /* Enable HSE Oscillator and activate PLL with HSE as source */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLM = 8;
+    RCC_OscInitStruct.PLL.PLLN = 336;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = 7;
+    HAL_RCC_OscConfig(&RCC_OscInitStruct);
+
+    /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 
+     clocks dividers */
+    RCC_ClkInitStruct.ClockType =
+        (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+    HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5);
+
+    /* STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported  */
+    if (HAL_GetREVID() == 0x1001) {
+        /* Enable the Flash prefetch */
+        __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
+    }
 }
 
-static inline void _start_cyccnt(void) { SCS_DWT_CTRL = 0x40000001; }
+static bool _cs43l22_shutdown(void) {
+    GPIO_InitTypeDef GPIO_InitStruct;
 
-static inline void _stop_cyccnt(void) { SCS_DWT_CTRL = 0x40000000; }
+    /* Audio reset pin configuration */
+    GPIO_InitStruct.Pin = CS43L22_RESET_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(CS43L22_RESET_GPIO, &GPIO_InitStruct);
 
-static inline uint32_t _get_cyccnt(void) { return SCS_DWT_CYCCNT; }
+    /* Power Down the codec */
+    HAL_GPIO_WritePin(CS43L22_RESET_GPIO, CS43L22_RESET_PIN, GPIO_PIN_RESET);  //lru
 
-void _calibrate_delay_cycles(uint32_t* cycles_per_loop, uint32_t* cycles_more) {
-    uint32_t loops = 1000;
-    uint32_t it1, it2;
-    uint32_t ret;
-
-    _start_cyccnt();
-    it1 = _get_cyccnt();
-
-    __asm__ volatile(
-        "mov r0, %[loops] \n\t"
-        "1: subs r0, #1 \n\t"
-        " bhi 1b \n\t"
-        :
-        : [loops] "r"(loops)
-        : "r0");
-
-    it2 = _get_cyccnt();
-    _stop_cyccnt();
-
-    *cycles_per_loop = (it2 - it1) / loops;
-    *cycles_more = (it2 - it1) - (*cycles_per_loop) * loops;
-}
-
-bool _cs43l22_shutdown(void) {
-    gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO4);
-
-    /* power down the codec */
-    gpio_clear(GPIOD, GPIO4);
-
-    /* wait for a delay to insure registers erasing */
-    busy_delay_ms(5);
+    /* Wait for a delay to insure registers erasing */
+    HAL_Delay(5);
 
     return true;
 }
 
 bool bsp_init(void) {
-    /* calibrate delay cycles */
-    _calibrate_delay_cycles(&_cycles_per_loop, &_cycles_shift);
-
-    /* init board clocks */
-    rcc_clock_setup_hse_3v3(&rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ]);
-
-    /* leds */
-    _led_init(led_blue);
-    _led_init(led_red);
-    _led_init(led_green);
-    _led_init(led_orange);
+    if (HAL_Init() != HAL_OK) return false;
+    _system_clock_config();
 
     /* switch off the codec cs43l22 */
     return _cs43l22_shutdown();
 }
 
 bool mmi_init() {
-    led_on(led_blue);
+    _bsp_led_init(ORANGE);
+    _bsp_led_init(GREEN);
+    _bsp_led_init(RED);
+    _bsp_led_init(BLUE);
+
+    _bsp_led_off(ORANGE);
+    _bsp_led_off(GREEN);
+    _bsp_led_off(RED);
+    _bsp_led_on(BLUE);
+
     return true;
 }
 
 void fault() {
-    bool state = true;
-
-    /* bye bye */
-    while (true) {
-        if (state)
-            led_on(led_red);
-        else
-            led_off(led_red);
-        state = !state;
-        busy_delay_ms(500);
-    }
+    _bsp_led_on(RED);
+    for (;;)
+        ;
 }
+
+void NMI_Handler(void) {}
+
+void HardFault_Handler(void) {
+    for (;;)
+        ;
+}
+
+void MemManage_Handler(void) {
+    for (;;)
+        ;
+}
+
+void BusFault_Handler(void) {
+    for (;;)
+        ;
+}
+
+void UsageFault_Handler(void) {
+    for (;;)
+        ;
+}
+
+void SVC_Handler(void) {}
+
+void DebugMon_Handler(void) {}
+
+void PendSV_Handler(void) {}
+
+void SysTick_Handler(void) { HAL_IncTick(); }
