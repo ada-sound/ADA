@@ -175,14 +175,14 @@ bool mmi_init() {
 USBD_HandleTypeDef USBD_Device;
 
 bool usb_init(void) {
-    /* Init Device Library */
-    USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
+    /* Init Device Library,Add Supported Class and Start the library*/
+    USBD_Init(&USBD_Device, &AUDIO_Desc, DEVICE_FS);
 
-    /* Add Supported Class */
-    USBD_RegisterClass(&USBD_Device, USBD_AUDIO_CLASS);
+    USBD_RegisterClass(&USBD_Device, &USBD_AUDIO);
 
-    /* Add Interface callbacks for AUDIO Class */
-    USBD_AUDIO_RegisterInterface(&USBD_Device, &audio_class_interface);
+    USBD_AUDIO_RegisterInterface(&USBD_Device, &USBD_AUDIO_fops_FS);
+
+    USBD_Start(&USBD_Device);
 
     return true;
 }
@@ -197,6 +197,9 @@ void fault() {
     for (;;)
         ;
 }
+
+void Error_Handler(void) { fault(); }
+void USBD_error_handler(void) { fault(); }
 
 void NMI_Handler(void) {}
 
@@ -227,3 +230,5 @@ void DebugMon_Handler(void) {}
 void PendSV_Handler(void) {}
 
 void SysTick_Handler(void) { HAL_IncTick(); }
+
+char* _sbrk(__attribute__((unused)) int incr) { return (char*)0; }

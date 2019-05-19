@@ -24,8 +24,13 @@
 #include "usbd_desc.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define USBD_VID 0x0483
-#define USBD_PID 0x7705
+
+/* 0483  STMicroelectronics */
+/*#define USBD_VID 0483
+#define USBD_PID 0x7705*/
+/* 0b99  Audio International, Inc. */
+#define USBD_VID 0x0b99
+#define USBD_PID 0x0001
 #define USBD_LANGID_STRING 0x409
 #define USBD_MANUFACTURER_STRING "ADA"
 #define USBD_PRODUCT_HS_STRING "ADA One"

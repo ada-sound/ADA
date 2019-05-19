@@ -19,6 +19,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <stm32f4xx_hal.h>
+#include <usbd_core.h>
+#include <usbd_def.h>
 #include "usb_audio.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -493,7 +495,9 @@ static USBD_StatusTypeDef USBD_LL_Setup_Fifo(void) {
     tx_fifo_size[USB_AUDIO_CONFIG_RECORD_EP_IN & 0x7F] = (USBD_AUDIO_CONFIG_RECORD_MAX_PACKET_SIZE + 3U) / 4;
 #endif /* USE_USB_AUDIO_RECORDING */
 
-    tx_fifo_used_size = (USB_AUDIO_GetConfigDescriptor(0) + 3) / 4;
+//lru CONFIG_DESCRIPTOR_SIZE has to be defined
+#define CONFIG_DESCRIPTOR_SIZE 16
+    tx_fifo_used_size = (CONFIG_DESCRIPTOR_SIZE + 3) / 4;
     tx_fifo_size[0] = tx_fifo_used_size;
 
     for (int i = 1; i <= max_tx_ep_num; i++) {

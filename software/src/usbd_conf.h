@@ -30,6 +30,11 @@
 #include "usb_audio.h"
 
 /* Exported constants --------------------------------------------------------*/
+
+/* #define for FS and HS identification */
+#define DEVICE_FS 		0
+#define DEVICE_HS 		1
+
 /* Common Config */
 #define USBD_MAX_NUM_INTERFACES 2
 #define USBD_MAX_NUM_CONFIGURATION 1
