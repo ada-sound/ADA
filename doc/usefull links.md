@@ -9,4 +9,6 @@ https://www.diyaudio.com/forums/attachments/class-d/725778d1546280520-design-log
 
 https://www.st.com/en/microcontrollers-microprocessors/stm32f746zg.html
 
+https://www.st.com/content/st_com/en/about/media-center/press-item.html/p3926.html
+
 Agreement between ST and Audioweaver: https://dspconcepts.com/solutions
