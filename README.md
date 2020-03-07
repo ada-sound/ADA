@@ -1,6 +1,6 @@
 # the ADA project
 
-**ADA** - **A**ll **D**igital **A**mp - aims to design a **premium quality hi-fi audio amplifier** (hardware and software) based on the full digital amplifier ('**fda**') chip **TAS3251** from Texas Instruments
+**ADA** - **A**ll **D**igital **A**mp - aims to design a **premium quality hi-fi audio amplifier** (hardware and software) based on full digital amplifier ('**fda**') chips
 
 The first requirements are:
 - 2-way amplifier, about 60W at 8 ohms per voice
@@ -25,4 +25,8 @@ For later:
 - HDMI + HEC (TV ethernet-> amp)
 
 # first mockup
-see [the mockup description here](hardware/mockup/README.md)
+Built on
+- an ST **STM32F4 Discovery** eval board based on an **STM32F4** microcontroller
+- a Texas Instrument **TAS3251EVM** eval board, contaning a **TAS3251** FDA chip
+
+See [the mockup description](hardware/mockup-1/README.md) and [the software sources and documentation](software/mockup-1)

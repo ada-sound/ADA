@@ -1,6 +1,6 @@
 [submodule "software/src/X-CUBE-USB-AUDIO"]
-	path = software/src/X-CUBE-USB-AUDIO
+	path = software/mockup-1/src/X-CUBE-USB-AUDIO
 	url = git@github.com:ada-sound/X-CUBE-USB-AUDIO.git
 [submodule "software/src/STM32CubeF4"]
-	path = software/src/STM32CubeF4
+	path = software/mockup-1/src/STM32CubeF4
 	url = git@github.com:ada-sound/STM32CubeF4.git
