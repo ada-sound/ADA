@@ -15,10 +15,7 @@ sudo apt install gcc-arm-embedded
 
 # install openocd
 sudo apt install openocd
-# correct the wrong pid of the stlink-v2.0 interface
-sudo sed -i "s/0x3748/0x374B/g" /usr/share/openocd/scripts/interface/stlink-v2.cfg
 ```
-http://stm32f4-discovery.net/2015/07/all-stm32-hal-libraries/#
 
 ## rpm world
 ```bash
@@ -31,8 +28,16 @@ sudo dnf install ./arm-none-eabi-gdb-7.6.2-4.fc24.x86_64.rpm
 
 # install openocd
 sudo dnf install openocd
-# correct the wrong pid of the stlink-v2.0 interface
+```
+
+## openocd issues
+```bash
+# if needed correct the wrong pid of the stlink-v2.0 interface
 sudo sed -i "s/0x3748/0x374B/g" /usr/share/openocd/scripts/interface/stlink-v2.cfg
+# if needed apply the udev rules and add yourself to the plugdev group
+sudo cp /usr/local/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d
+sudo groupadd plugdev
+sudo usermod -a -G plugdev louis
 ```
 
 # build
