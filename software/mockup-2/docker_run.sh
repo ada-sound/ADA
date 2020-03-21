@@ -1,2 +1,2 @@
 #!/bin/sh
-docker run --rm -it --net host -v src:/root/workspace ada_mockup-2
+docker run --rm -it --net host --privileged -v /dev/bus/usb:/dev/bus/usb -v $(realpath src):/root/workspace ada_mockup-2
