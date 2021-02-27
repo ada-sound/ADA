@@ -187,8 +187,8 @@ bool tas3251_init(uint32_t i2c_device_addr) {
     tas3251_mute(true);
 
     /* start amplifier */
-    _startup_amp_simple(i2c_device_addr);
-    //_startup_amp(i2c_device_addr);
+    //_startup_amp_simple(i2c_device_addr);
+    _startup_amp(i2c_device_addr);
 
     /* */
     BSP_AUDIO_OUT_Play((uint16_t*)((uint8_t*)waveformat + sizeof(WAVE_FormatTypeDef)), waveformat->FileSize);
