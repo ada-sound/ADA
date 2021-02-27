@@ -75,7 +75,7 @@ cfg_reg registers[] = {
 
 // speed 03-48k 04-96k
 //dynamically reading speed
-    { 0x22, 0x04 }, //REG_FS_SPEED_MODE             88.2-96 kHz
+    { 0x22, 0x03 }, //REG_FS_SPEED_MODE             03=48k, 04=96k
 
     { 0x00, 0x00 }, 
     { 0x7f, 0x00 }, 
@@ -1123,8 +1123,8 @@ cfg_reg registers[] = {
     { 0x00, 0x00 },
     { 0x7f, 0x00 },
     { 0x00, 0x00 },
-    { 0x3d, 0x30 }, //REG_LEFT_DIGITAL_VOLUME   100%
-    { 0x3e, 0x30 }, //REG_RIGHT_DIGITAL_VOLUME  100%
+    { 0x3d, 0x40 }, //REG_LEFT_DIGITAL_VOLUME   0dB=0x30, -8dB=0x40, -16dB=0x50
+    { 0x3e, 0x40 }, //REG_RIGHT_DIGITAL_VOLUME  0dB=0x30, -8dB=0x40, -16dB=0x50
     { 0x00, 0x00 },
     { 0x7f, 0x00 },
     { 0x00, 0x01 }, //REG_PAGE                  page 1

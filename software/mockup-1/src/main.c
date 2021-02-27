@@ -43,8 +43,8 @@ int main(void) {
     if (!tas3251_init(0x94, 48000))
         fault();
 
-    tas3251_set_volume(100, left);
-    tas3251_set_volume(100, right);
+    //tas3251_set_volume(10, left);
+    //tas3251_set_volume(10, right);
     _loop_play_tas3251();
 
     //if (cs43l22_Init(0x96, OUTPUT_DEVICE_HEADPHONE, 128, 48000))
