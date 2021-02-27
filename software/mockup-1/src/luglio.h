@@ -50,39 +50,39 @@ typedef union {
 
 cfg_reg registers[] = {
 //program memory
+    { 0x00, 0x00 }, //REG_PAGE                      page 0
+    { 0x7f, 0x00 }, //REG_BOOK                      book 0
+    { 0x02, 0x11 }, //REG_STANDBY                   power down and standby
+    { 0x01, 0x11 }, //REG_RESET                     reset mode registers and modules
+    { 0x00, 0x00 }, 
     { 0x00, 0x00 },
-    { 0x7f, 0x00 },
-    { 0x02, 0x11 },
-    { 0x01, 0x11 },
     { 0x00, 0x00 },
     { 0x00, 0x00 },
-    { 0x00, 0x00 },
-    { 0x00, 0x00 },
-    { 0x03, 0x11 },
-    { 0x2a, 0x00 },
-    { 0x25, 0x18 },
-    { 0x0d, 0x10 },
-    { 0x02, 0x00 },
+    { 0x03, 0x11 }, //REG_MUTE                      mute lr
+    { 0x2a, 0x00 }, //REG_DAC_DATA_PATH             zero data lr (mute)
+    { 0x25, 0x18 }, //REG_CLOCK_DETECTION_CONFIG    ignore MCLK halt detection, Ignore MCLK detection
+    { 0x0d, 0x10 }, //REG_PLL_CLOCK_CONFIGURATION   the PLL reference clock is SCLK
+    { 0x02, 0x00 }, //REG_STANDBY                   normal operation dac and dsp
 
 
 //Sample rate update
     { 0x00, 0x00 },
     { 0x7f, 0x00 },
-    { 0x02, 0x80 },
+    { 0x02, 0x80 }, //REG_STANDBY                   reset the DSP
 
     { 0x00, 0x00 },
     { 0x7f, 0x00 },
 
 // speed 03-48k 04-96k
 //dynamically reading speed
-    { 0x22, 0x04 },
+    { 0x22, 0x04 }, //REG_FS_SPEED_MODE             88.2-96 kHz
 
-    { 0x00, 0x00 },
-    { 0x7f, 0x00 },
-    { 0x02, 0x00 },
+    { 0x00, 0x00 }, 
+    { 0x7f, 0x00 }, 
+    { 0x02, 0x00 }, //REG_STANDBY                   normal operation dac and dsp
 
 //write co-efficients
-    { 0x00, 0x00 },
+    { 0x00, 0x00 }, //                                      ? DSP coeffs ?
     { 0x7f, 0x8c },
     { 0x00, 0x1e },
     { 0x1c, 0x00 },
@@ -1114,24 +1114,24 @@ cfg_reg registers[] = {
     { 0x17, 0x01 },
 
 //register tuning
+    { 0x00, 0x00 }, //REG_PAGE                  page 0
+    { 0x7f, 0x00 }, //REG_BOOK                  book 0
+    { 0x00, 0x00 },
+    { 0x07, 0x00 }, //REG_SDOUT                 SDOUT is the DSP output
+    { 0x08, 0x20 }, //REG_GPIO                  SDOUT is output
+    { 0x55, 0x07 }, //REG_GPIO2_OUTPUT          0111: Serial audio interface data output (SDOUT)
     { 0x00, 0x00 },
     { 0x7f, 0x00 },
     { 0x00, 0x00 },
-    { 0x07, 0x00 },
-    { 0x08, 0x20 },
-    { 0x55, 0x07 },
+    { 0x3d, 0x30 }, //REG_LEFT_DIGITAL_VOLUME   100%
+    { 0x3e, 0x30 }, //REG_RIGHT_DIGITAL_VOLUME  100%
     { 0x00, 0x00 },
     { 0x7f, 0x00 },
-    { 0x00, 0x00 },
-    { 0x3d, 0x30 },
-    { 0x3e, 0x30 },
-    { 0x00, 0x00 },
-    { 0x7f, 0x00 },
-    { 0x00, 0x01 },
-    { 0x02, 0x00 },
+    { 0x00, 0x01 }, //REG_PAGE                  page 1
+    { 0x02, 0x00 }, //REG_ANALOG_GAIN_CONTROL   0 db
 
-    { 0x00, 0x00 },
+    { 0x00, 0x00 }, //REG_PAGE                  page 0
     { 0x7f, 0x00 },
-    { 0x03, 0x00 },
-    { 0x2a, 0x11 },
+    { 0x03, 0x00 }, //REG_MUTE                  unmute lr
+    { 0x2a, 0x11 }, //REG_DAC_DATA_PATH         {Left,Right} DAC Data Path is {Left,Right} channel data
 };

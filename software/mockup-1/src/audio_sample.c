@@ -41,6 +41,7 @@
      http://creativecommons.org/licenses/by/3.0/us/
 */     
 #include <stdint.h>
+#include "audio_sample.h"
 
 const uint16_t AUDIO_SAMPLE[] = {
 0x4952, 0x4646, /*0x4f6e, 0xf*/ 0xe5e1, 0x1, 0x4157, 0x4556, 0x6d66, 0x2074, 0x12, 0, 0x1, 
@@ -39999,26 +40000,9 @@ const uint16_t AUDIO_SAMPLE[] = {
 0xe685, 0xe7bd, 0xe6b1, 0xe7d6, 0xe6b1, 0xe7d6, 0xe74d, 0xe85f, 0xe74d, 0xe85f, 0xe846
  };
 
-typedef struct
-{
-  uint32_t   ChunkID;       /* 0 */ 
-  uint32_t   FileSize;      /* 4 */
-  uint32_t   FileFormat;    /* 8 */
-  uint32_t   SubChunk1ID;   /* 12 */
-  uint32_t   SubChunk1Size; /* 16 */  
-  uint16_t   AudioFormat;   /* 20 */ 
-  uint16_t   NbrChannels;   /* 22 */   
-  uint32_t   SampleRate;    /* 24 */
-  
-  uint32_t   ByteRate;      /* 28 */
-  uint16_t   BlockAlign;    /* 32 */  
-  uint16_t   BitPerSample;  /* 34 */  
-  uint32_t   SubChunk2ID;   /* 36 */   
-  uint32_t   SubChunk2Size; /* 40 */    
-
-}WAVE_FormatTypeDef;
-
-WAVE_FormatTypeDef* waveformat =  (WAVE_FormatTypeDef*)AUDIO_SAMPLE;
+WAVE_FormatTypeDef* wav_get_audio_sample() {
+    return (WAVE_FormatTypeDef*)AUDIO_SAMPLE;
+}
 
 /**
   * @}

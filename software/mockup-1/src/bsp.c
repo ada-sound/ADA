@@ -131,7 +131,7 @@ static bool _cs43l22_shutdown(void) {
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
     /* Power Down the codec */
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4, GPIO_PIN_SET);  //lru
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4, GPIO_PIN_RESET);
 
     /* Wait for a delay to insure registers erasing */
     HAL_Delay(5);
@@ -266,12 +266,12 @@ static void _i2c_msp_init(void) {
     HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
 }
 
-static void _i2c_error(uint32_t i2c_device_addr) {
+static void _i2c_error() {
     HAL_I2C_DeInit(&_i2c_handle);
-    i2c_init(i2c_device_addr);
+    i2c_init();
 }
 
-void i2c_init(uint32_t i2c_device_addr) {
+void i2c_init() {
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
 
@@ -287,21 +287,21 @@ void i2c_init(uint32_t i2c_device_addr) {
     }
 }
 
-void i2c_write(uint32_t i2c_device_addr, uint16_t memaddr, uint8_t value) {
-    if (HAL_I2C_Mem_Write(&_i2c_handle, i2c_device_addr, memaddr, I2C_MEMADD_SIZE_8BIT, &value, 1, I2cxTimeout) != HAL_OK)
-        _i2c_error(i2c_device_addr);
+void i2c_write(uint16_t device_addr, uint16_t memaddr, uint8_t value) {
+    if (HAL_I2C_Mem_Write(&_i2c_handle, device_addr, memaddr, I2C_MEMADD_SIZE_8BIT, &value, 1, I2cxTimeout) != HAL_OK)
+        _i2c_error();
 }
 
-void i2c_burst_write(uint32_t i2c_device_addr, uint16_t memaddr, uint8_t value[], uint16_t size) {
-    if (HAL_I2C_Mem_Write(&_i2c_handle, i2c_device_addr, memaddr, I2C_MEMADD_SIZE_8BIT, value, size, I2cxTimeout) != HAL_OK)
-        _i2c_error(i2c_device_addr);
+void i2c_burst_write(uint16_t device_addr, uint16_t memaddr, uint8_t value[], uint16_t size) {
+    if (HAL_I2C_Mem_Write(&_i2c_handle, device_addr, memaddr, I2C_MEMADD_SIZE_8BIT, value, size, I2cxTimeout) != HAL_OK)
+        _i2c_error();
 }
 
-uint8_t i2c_read(uint16_t i2c_device_addr, uint16_t memaddr)
+uint8_t i2c_read(uint16_t device_addr, uint16_t memaddr)
 {
     uint8_t value = 0;
-    if(HAL_I2C_Mem_Read(&_i2c_handle, i2c_device_addr, memaddr, I2C_MEMADD_SIZE_8BIT, &value, 1, I2cxTimeout) != HAL_OK)
-        _i2c_error(i2c_device_addr);
+    if(HAL_I2C_Mem_Read(&_i2c_handle, device_addr, memaddr, I2C_MEMADD_SIZE_8BIT, &value, 1, I2cxTimeout) != HAL_OK)
+        _i2c_error();
 
     return value;
 }
@@ -421,6 +421,7 @@ static void _i2s_pin_dma_config(I2S_HandleTypeDef* hi2s, void* params) {
     /* I2S3 pins configuration: MCK pin */
     I2S3_MCK_CLK_ENABLE();
     GPIO_InitStruct.Pin = I2S3_MCK_PIN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH; 
     HAL_GPIO_Init(I2S3_MCK_GPIO_PORT, &GPIO_InitStruct);
 
     /* Enable the I2S DMA clock */

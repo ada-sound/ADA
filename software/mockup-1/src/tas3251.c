@@ -22,37 +22,23 @@
 /* Audio status definition */
 #define AUDIODATA_SIZE 2 /* 16-bits audio data size */
 
-typedef struct {
-    uint32_t ChunkID;       /* 0 */
-    uint32_t FileSize;      /* 4 */
-    uint32_t FileFormat;    /* 8 */
-    uint32_t SubChunk1ID;   /* 12 */
-    uint32_t SubChunk1Size; /* 16 */
-    uint16_t AudioFormat;   /* 20 */
-    uint16_t NbrChannels;   /* 22 */
-    uint32_t SampleRate;    /* 24 */
-
-    uint32_t ByteRate;      /* 28 */
-    uint16_t BlockAlign;    /* 32 */
-    uint16_t BitPerSample;  /* 34 */
-    uint32_t SubChunk2ID;   /* 36 */
-    uint32_t SubChunk2Size; /* 40 */
-
-} WAVE_FormatTypeDef;
-
-extern WAVE_FormatTypeDef* waveformat;
-
 /* Variables used in normal mode to manage audio file during DMA transfer */
 static uint16_t* AudioPos;
 static uint32_t AudioSizeBytes;
 static uint16_t* AudioCurrentPos;
 static uint32_t AudioRemSizeBytes;
+static void (*_notify_end_play)();
 
-void BSP_AUDIO_OUT_Play(uint16_t* pBuffer, uint32_t SizeBytes) {
+static uint16_t _i2c_device_addr;
+static uint32_t _audio_freq;
+
+void tas3251_play(uint16_t* buffer, uint32_t size_bytes, void (*notify_end_play)()) {
+    _notify_end_play = notify_end_play;
+
     /* Update the Media layer and enable it for play */
-    AudioPos = pBuffer;
+    AudioPos = buffer;
     AudioCurrentPos = AudioPos;
-    AudioSizeBytes = SizeBytes;
+    AudioSizeBytes = size_bytes;
     AudioRemSizeBytes = AudioSizeBytes;
 
     uint16_t transmit_size;
@@ -67,7 +53,7 @@ void BSP_AUDIO_OUT_Play(uint16_t* pBuffer, uint32_t SizeBytes) {
     AudioCurrentPos += transmit_size;
 }
 
-void BSP_AUDIO_OUT_TransferComplete_CallBack() {
+static void _dma_transfer_complete() {
     if (AudioRemSizeBytes > 0 && AudioRemSizeBytes >= (DMA_MAX_SZE * AUDIODATA_SIZE)) {
         uint16_t transmit_size;
         if (AudioRemSizeBytes < (DMA_MAX_SZE * AUDIODATA_SIZE))
@@ -81,10 +67,8 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack() {
         AudioCurrentPos += transmit_size;
     } else {
         /* Call DMA Stop to disable DMA stream before stopping codec */
-        //i2s_stop_dma();
-
-        /* reset to begining */
-        BSP_AUDIO_OUT_Play(AudioPos, AudioSizeBytes);
+        i2s_stop_dma();
+        (*_notify_end_play)();
     }
 }
 
@@ -104,7 +88,7 @@ static bool _configure_io_out(GPIO_TypeDef* gpio, uint32_t pin) {
     return true;
 }
 
-static void _startup_amp(uint32_t i2c_device_addr) {
+static void _startup_amp_luglio(uint32_t i2c_device_addr) {
     int i = 0;
     while (i < sizeof(registers) / sizeof(cfg_reg)) {
         switch (registers[i].command) {
@@ -126,74 +110,125 @@ static void _startup_amp(uint32_t i2c_device_addr) {
     }
 }
 
+static void _startup_amp(uint32_t i2c_device_addr) {
+    struct { uint8_t offset; uint8_t value; } startup_regs[] = {
+        //program memory
+        { 0x00, 0x00 }, //REG_PAGE                      page 0
+        { 0x7f, 0x00 }, //REG_BOOK                      book 0
+        { 0x02, 0x11 }, //REG_STANDBY                   power down and standby
+        { 0x01, 0x11 }, //REG_RESET                     reset mode registers and modules
+        { 0x00, 0x00 }, 
+        { 0x00, 0x00 },
+        { 0x00, 0x00 },
+        { 0x00, 0x00 },
+        { 0x03, 0x11 }, //REG_MUTE                      mute lr
+        { 0x2a, 0x00 }, //REG_DAC_DATA_PATH             zero data lr (mute)
+        { 0x25, 0x18 }, //REG_CLOCK_DETECTION_CONFIG    ignore MCLK halt detection, Ignore MCLK detection
+        { 0x0d, 0x10 }, //REG_PLL_CLOCK_CONFIGURATION   the PLL reference clock is SCLK
+        { 0x02, 0x00 }, //REG_STANDBY                   normal operation dac and dsp
+
+
+        //Sample rate update
+        { 0x00, 0x00 },
+        { 0x7f, 0x00 },
+        { 0x02, 0x80 }, //REG_STANDBY                   reset the DSP
+
+        { 0x00, 0x00 },
+        { 0x7f, 0x00 },
+
+        // speed 03-48k 04-96k
+        //dynamically reading speed
+        { 0x22, 0x03 }, //REG_FS_SPEED_MODE             48 kHz
+
+        { 0x00, 0x00 }, 
+        { 0x7f, 0x00 }, 
+        { 0x02, 0x00 }, //REG_STANDBY                   normal operation dac and dsp
+        //register tuning
+        { 0x00, 0x00 }, //REG_PAGE                      page 0
+        { 0x7f, 0x00 }, //REG_BOOK                      book 0
+        { 0x00, 0x00 },
+        { 0x07, 0x00 }, //REG_SDOUT                     SDOUT is the DSP output
+        { 0x08, 0x20 }, //REG_GPIO                      SDOUT is output
+        { 0x55, 0x07 }, //REG_GPIO2_OUTPUT              0111: Serial audio interface data output (SDOUT)
+        { 0x00, 0x00 },
+        { 0x7f, 0x00 },
+        { 0x00, 0x00 },
+        { 0x3d, 0x30 }, //REG_LEFT_DIGITAL_VOLUME       100%
+        { 0x3e, 0x30 }, //REG_RIGHT_DIGITAL_VOLUME      100%
+        { 0x00, 0x00 },
+        { 0x7f, 0x00 },
+        { 0x00, 0x01 }, //REG_PAGE                      page 1
+        { 0x02, 0x00 }, //REG_ANALOG_GAIN_CONTROL       0 db
+
+        { 0x00, 0x00 }, //REG_PAGE                      page 0
+        { 0x7f, 0x00 },
+        { 0x03, 0x00 }, //REG_MUTE                      unmute lr
+        { 0x2a, 0x11 }, //REG_DAC_DATA_PATH             {Left,Right} DAC Data Path is {Left,Right} channel data
+    };
+
+    for (int i = 0; i < sizeof(startup_regs) / sizeof(struct { uint8_t offset; uint8_t value; }); i++)
+        i2c_write(_i2c_device_addr, registers[i].offset, registers[i].value);
+}
+
 static void _startup_amp_simple(uint32_t i2c_device_addr) {
     /* startup sequence according to SLASEG6A – MAY 2018 – REVISED NOVEMBER 2018 §8.3.11.1 */
 
     /* 1. Apply power to DAC_DVDD, DAC_AVDD, GVDD_x, and PVDD_x */
     /* 2. Apply I2S or TDM clocks to the device to enable the internal system clocks */
     /* 3. Mute the left and right DAC channels */
-    i2c_write(i2c_device_addr, TAS3251_REG_PAGE, 0x00);
-    HAL_Delay(1);
-    i2c_write(i2c_device_addr, TAS3251_REG_BOOK, 0x00);
-    HAL_Delay(1);
+    i2c_write(i2c_device_addr, REG_PAGE, 0x00);
+    i2c_write(i2c_device_addr, REG_BOOK, 0x00);
 
     /* mute right and left */
-    i2c_write(i2c_device_addr, TAS3251_REG_MUTE, TAS3251_MUTE_LEFT|TAS3251_MUTE_RIGHT);
-    HAL_Delay(1);
+    i2c_write(i2c_device_addr, REG_MUTE, TAS3251_MUTE_LEFT|TAS3251_MUTE_RIGHT);
 
-    /* standby */
-    i2c_write(i2c_device_addr, TAS3251_REG_STANDBY, TAS3251_STANDBY_STANDBY);
-    uint8_t status = i2c_read(i2c_device_addr, TAS3251_REG_STANDBY|TAS3251_STANDBY_DSPR);
-    HAL_Delay(1);
+    /* volume 0 */
+    tas3251_set_volume(0, left);
+    tas3251_set_volume(0, right);
 
-    /* enable */
-    //i2c_write(i2c_device_addr, TAS3251_REG_STANDBY, TAS3251_STANDBY_ENABLE);
-    //HAL_Delay(1);
-
-    /* 5.1. set digital volume */
-    i2c_write(i2c_device_addr, TAS3251_REG_LEFT_DIGITAL_VOLUME, (uint8_t)200);
-    HAL_Delay(1);
-    i2c_write(i2c_device_addr, TAS3251_REG_RIGHT_DIGITAL_VOLUME, (uint8_t)200);
-    HAL_Delay(1);
-
-    /* dsp out of standby */
-    //i2c_write(i2c_device_addr, TAS3251_REG_STANDBY, TAS3251_STANDBY_DSPR);
-    //HAL_Delay(1);
-
-    /* enable (but no DSP) */
-    i2c_write(i2c_device_addr, TAS3251_REG_STANDBY, TAS3251_STANDBY_ENABLE|TAS3251_STANDBY_DSPR);
-    status = i2c_read(i2c_device_addr, TAS3251_REG_STANDBY);
-    HAL_Delay(1);
+    /* enable dsp */
+    i2c_write(i2c_device_addr, REG_STANDBY, REG_STANDBY|TAS3251_STANDBY_DSPR);
+    //uint8_t status = i2c_read(i2c_device_addr, REG_STANDBY|TAS3251_STANDBY_DSPR);
 
     /* unmute right and left */
-    i2c_write(i2c_device_addr, TAS3251_REG_MUTE, 0);
+    i2c_write(i2c_device_addr, REG_MUTE, 0);
+
+    /* enable global */
+    i2c_write(i2c_device_addr, REG_STANDBY, TAS3251_STANDBY_ENABLE|TAS3251_STANDBY_DSPR);
+    //status = i2c_read(i2c_device_addr, REG_STANDBY);
 }
 
-void tas3251_mute(bool mute) { HAL_GPIO_WritePin(MUTE_GPIO, MUTE_PIN, mute ? GPIO_PIN_RESET : GPIO_PIN_SET); }
+void tas3251_set_volume(int purcent, channel_t channel) {
+    /* 0%=255, 100%=48 */
+    uint8_t set = 48 + ((100 - purcent) * (255 - 48)) / 100;
+    i2c_write(_i2c_device_addr, channel == left ? REG_LEFT_DIGITAL_VOLUME:REG_RIGHT_DIGITAL_VOLUME, set);
+}
+
+void tas3251_mute(bool mute) { HAL_GPIO_WritePin(MUTE_GPIO, MUTE_PIN, mute ? GPIO_PIN_SET : GPIO_PIN_RESET); }
 
 void tas3251_rst(bool rst) { HAL_GPIO_WritePin(RST_GPIO, RST_PIN, rst ? GPIO_PIN_RESET : GPIO_PIN_SET); }
 
-bool tas3251_init(uint32_t i2c_device_addr) {
-    if (!i2s_init(48000, BSP_AUDIO_OUT_TransferComplete_CallBack))
+bool tas3251_init(uint16_t i2c_device_addr, uint32_t audio_freq) {    
+    _i2c_device_addr = i2c_device_addr;
+    _audio_freq = audio_freq;
+
+    if (!i2s_init(_audio_freq, _dma_transfer_complete))
         return false;
 
     /* i2c commands to start the TAS3251 */
-    i2c_init(i2c_device_addr);
+    i2c_init();
 
     /* mute, rst the TAS3251 */
     _configure_io_out(RST_GPIO, RST_PIN);
     _configure_io_out(MUTE_GPIO, MUTE_PIN);
+
     tas3251_rst(false);
-    tas3251_mute(true);
+    tas3251_mute(false);
 
     /* start amplifier */
-    //_startup_amp_simple(i2c_device_addr);
-    _startup_amp(i2c_device_addr);
-
-    /* */
-    BSP_AUDIO_OUT_Play((uint16_t*)((uint8_t*)waveformat + sizeof(WAVE_FormatTypeDef)), waveformat->FileSize);
+    //_startup_amp(_i2c_device_addr);
+    //_startup_amp_simple(_i2c_device_addr);
+    _startup_amp_luglio(_i2c_device_addr);
 
     return true;
 }
-
-bool tas3251_set_output_freq(void) { return true; }
