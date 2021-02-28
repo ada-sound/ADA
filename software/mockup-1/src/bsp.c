@@ -187,9 +187,11 @@ bool usb_start(void) {
 }
 
 void fault() {
-    _bsp_led_on(RED);
-    for (;;)
-        ;
+    _bsp_led_off(BLUE);
+    while (true) {
+        _bsp_led_toggle(RED);
+        HAL_Delay(1000);
+    }
 }
 
 void Error_Handler(void) { fault(); }
