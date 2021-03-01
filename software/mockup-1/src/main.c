@@ -13,11 +13,11 @@ int main(void) {
     if (!bsp_init() || !mmi_init()/* || !usb_init()*/)
         fault();
 
-    if (!tas3251_init(0x94, 48000))
+    if (!tas3251_init(0x94, 44100))
         fault();
 
-    tas3251_set_volume(90, left);
-    tas3251_set_volume(90, right);
+    tas3251_set_volume(60, left);
+    tas3251_set_volume(60, right);
     _loop_play_tas3251();
 
     while (1) {
