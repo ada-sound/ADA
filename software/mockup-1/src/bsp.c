@@ -1,6 +1,7 @@
+#include "bsp.h"
+
 #include <stm32f4xx_hal.h>
 
-#include "bsp.h"
 #include "usb_audio.h"
 #include "usbd_audio_if.h"
 #include "usbd_core.h"
@@ -140,7 +141,8 @@ static bool _cs43l22_shutdown(void) {
 }
 
 bool bsp_init(void) {
-    if (HAL_Init() != HAL_OK) return false;
+    if (HAL_Init() != HAL_OK)
+        return false;
     _system_clock_config();
 
     /* switch off the codec cs43l22 */
@@ -170,19 +172,12 @@ USBD_HandleTypeDef USBD_Device;
 
 bool usb_init(void) {
     /* Init Device Library,Add Supported Class and Start the library*/
-    USBD_Init(&USBD_Device, &AUDIO_Desc, DEVICE_FS);
+    USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
 
     USBD_RegisterClass(&USBD_Device, &USBD_AUDIO);
 
     USBD_AUDIO_RegisterInterface(&USBD_Device, &USBD_AUDIO_fops_FS);
 
-    USBD_Start(&USBD_Device);
-
-    return true;
-}
-
-bool usb_start(void) {
-    /* Start Device Process */
     return USBD_Start(&USBD_Device) == USBD_OK;
 }
 
@@ -299,10 +294,9 @@ void i2c_burst_write(uint16_t device_addr, uint16_t memaddr, uint8_t value[], ui
         _i2c_error();
 }
 
-uint8_t i2c_read(uint16_t device_addr, uint16_t memaddr)
-{
+uint8_t i2c_read(uint16_t device_addr, uint16_t memaddr) {
     uint8_t value = 0;
-    if(HAL_I2C_Mem_Read(&_i2c_handle, device_addr, memaddr, I2C_MEMADD_SIZE_8BIT, &value, 1, I2cxTimeout) != HAL_OK)
+    if (HAL_I2C_Mem_Read(&_i2c_handle, device_addr, memaddr, I2C_MEMADD_SIZE_8BIT, &value, 1, I2cxTimeout) != HAL_OK)
         _i2c_error();
 
     return value;
@@ -423,7 +417,7 @@ static void _i2s_pin_dma_config(I2S_HandleTypeDef* hi2s, void* params) {
     /* I2S3 pins configuration: MCK pin */
     I2S3_MCK_CLK_ENABLE();
     GPIO_InitStruct.Pin = I2S3_MCK_PIN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH; 
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
     HAL_GPIO_Init(I2S3_MCK_GPIO_PORT, &GPIO_InitStruct);
 
     /* Enable the I2S DMA clock */
@@ -467,8 +461,7 @@ bool i2s_init(uint32_t audio_freq, void (*transfer_complete_dma)()) {
     _i2s_clk_config(&hAudioOutI2s, audio_freq, NULL);
 
     hAudioOutI2s.Instance = I2S3;
-    if (HAL_I2S_GetState(&hAudioOutI2s) == HAL_I2S_STATE_RESET)
-        _i2s_pin_dma_config(&hAudioOutI2s, NULL);
+    if (HAL_I2S_GetState(&hAudioOutI2s) == HAL_I2S_STATE_RESET) _i2s_pin_dma_config(&hAudioOutI2s, NULL);
 
     __HAL_I2S_DISABLE(&hAudioOutI2s);
 
@@ -493,9 +486,7 @@ void i2s_transmit_dma(uint16_t* audio_current_pos, uint16_t transmit_size) {
     HAL_I2S_Transmit_DMA(&hAudioOutI2s, audio_current_pos, transmit_size);
 }
 
-void i2s_stop_dma() {
-    HAL_I2S_DMAStop(&hAudioOutI2s);
-}
+void i2s_stop_dma() { HAL_I2S_DMAStop(&hAudioOutI2s); }
 
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* hi2s) {
     if (hi2s->Instance == I2S3) {

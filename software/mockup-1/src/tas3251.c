@@ -88,7 +88,8 @@ static void _startup_amp(uint32_t i2c_device_addr) {
 }
 
 void tas3251_set_volume(int purcent, channel_t channel) {
-    /* 0%=255, 100%=48 */
+    /* 255=0%=mute, 254=2%=-103dB, 48=100%=0dB */
+    /* +1=-0.5dB */
     uint8_t set = 48 + ((100 - purcent) * (255 - 48)) / 100;
     i2c_write(_i2c_device_addr, channel == left ? REG_LEFT_DIGITAL_VOLUME:REG_RIGHT_DIGITAL_VOLUME, set);
 }
