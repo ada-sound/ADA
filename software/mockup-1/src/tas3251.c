@@ -48,7 +48,7 @@ void tas3251_play(uint16_t* buffer, uint32_t size_bytes, void (*notify_end_play)
 }
 
 static void _dma_transfer_complete() {
-    if (AudioRemSizeBytes > 0 && AudioRemSizeBytes >= (DMA_MAX_SZE * AUDIODATA_SIZE)) {
+    if (AudioRemSizeBytes > 0) {
         uint16_t transmit_size;
         if (AudioRemSizeBytes < (DMA_MAX_SZE * AUDIODATA_SIZE))
             transmit_size = AudioRemSizeBytes / AUDIODATA_SIZE;
