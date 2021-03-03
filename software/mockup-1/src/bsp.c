@@ -2,10 +2,10 @@
 
 #include <stm32f4xx_hal.h>
 
-#include "usb_audio.h"
-#include "usbd_audio_if.h"
 #include "usbd_core.h"
 #include "usbd_desc.h"
+#include "usbd_audio.h"
+
 
 #define LED4_PIN GPIO_PIN_12
 #define LED4_GPIO_PORT GPIOD
@@ -169,6 +169,7 @@ void mmi_heartbeat() {
 }
 
 USBD_HandleTypeDef USBD_Device;
+extern PCD_HandleTypeDef hpcd;
 
 bool usb_init(void) {
     /* Init Device Library,Add Supported Class and Start the library*/
@@ -176,9 +177,19 @@ bool usb_init(void) {
 
     USBD_RegisterClass(&USBD_Device, &USBD_AUDIO);
 
-    USBD_AUDIO_RegisterInterface(&USBD_Device, &USBD_AUDIO_fops_FS);
+    extern USBD_AUDIO_ItfTypeDef USBD_AUDIO_fops;
+    USBD_AUDIO_RegisterInterface(&USBD_Device, &USBD_AUDIO_fops);
 
     return USBD_Start(&USBD_Device) == USBD_OK;
+}
+
+#ifdef USE_USB_FS
+void OTG_FS_IRQHandler(void)
+#else
+void OTG_HS_IRQHandler(void)
+#endif
+{
+  HAL_PCD_IRQHandler(&hpcd);
 }
 
 void fault() {
@@ -222,7 +233,9 @@ void PendSV_Handler(void) {}
 
 void SysTick_Handler(void) { HAL_IncTick(); }
 
-char* _sbrk(__attribute__((unused)) int incr) { return (char*)0; }
+char* _sbrk(__attribute__((unused)) int incr) {
+    return (char*)0;
+}
 
 /** I2C
  */

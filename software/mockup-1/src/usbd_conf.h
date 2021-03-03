@@ -1,94 +1,104 @@
 /**
   ******************************************************************************
-  * @file    USB_Device/AUDIO_EXT_Advanced_Player_Recorder/Inc/usbd_conf.h
-  * @author  MCD Application Team 
+  * @file    USB_Device/AUDIO_Standalone/Inc/usbd_conf.h
+  * @author  MCD Application Team
   * @brief   General low level driver configuration
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2019  STMicroelectronics.
+  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.</center></h2>
   *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
+  * Redistribution and use in source and binary forms, with or without 
+  * modification, are permitted, provided that the following conditions are met:
+  *
+  * 1. Redistribution of source code must retain the above copyright notice, 
+  *    this list of conditions and the following disclaimer.
+  * 2. Redistributions in binary form must reproduce the above copyright notice,
+  *    this list of conditions and the following disclaimer in the documentation
+  *    and/or other materials provided with the distribution.
+  * 3. Neither the name of STMicroelectronics nor the names of other 
+  *    contributors to this software may be used to endorse or promote products 
+  *    derived from this software without specific written permission.
+  * 4. This software, including modifications and/or derivative works of this 
+  *    software, must execute solely and exclusively on microcontroller or
+  *    microprocessor devices manufactured by or for STMicroelectronics.
+  * 5. Redistribution and use of this software other than as permitted under 
+  *    this license is void and will automatically terminate your rights under 
+  *    this license. 
+  *
+  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
+  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
+  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
+  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
+  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
+  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
-  */
-
+  */  
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __USBD_CONF_H
 #define __USBD_CONF_H
 
 /* Includes ------------------------------------------------------------------*/
+#include "stm32f4xx_hal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "hal_usb_ex.h"
-#include "stm32f4xx_hal.h"
-#include "usb_audio.h"
 
-/* Exported constants --------------------------------------------------------*/
-
-/* #define for FS and HS identification */
-#define DEVICE_FS 		0
-#define DEVICE_HS 		1
-
-/* Common Config */
-#define USBD_MAX_NUM_INTERFACES 2
-#define USBD_MAX_NUM_CONFIGURATION 1
-#define USBD_MAX_STR_DESC_SIZ 0x100
-#define USBD_SUPPORT_USER_STRING 0
-#define USBD_SELF_POWERED 1
-#define USBD_DEBUG_LEVEL 0
-#if USE_AUDIO_PLAYBACK_USB_FEEDBACK
-#define USBD_SUPPORT_AUDIO_OUT_FEEDBACK 1
-#endif /* USE_AUDIO_PLAYBACK_USB_FEEDBACK */
-#if USE_USB_AUDIO_CLASS_10
-#if (defined USE_AUDIO_USB_PLAY_MULTI_FREQUENCIES) || (defined USE_AUDIO_USB_RECORD_MULTI_FREQUENCIES)
-#define USBD_SUPPORT_AUDIO_MULTI_FREQUENCIES 1
-#endif /*(defined USE_AUDIO_USB_PLAY_MULTI_FREQUENCIES)||(defined USE_AUDIO_USB_RECORD_MULTI_FREQUENCIES) */
-#endif /* USE_USB_AUDIO_CLASS_10 */
-/* AUDIO Class Config */
 /* Exported types ------------------------------------------------------------*/
+/* Exported constants --------------------------------------------------------*/
+/* Common Config */
+#define USBD_MAX_NUM_INTERFACES               1
+#define USBD_MAX_NUM_CONFIGURATION            1
+#define USBD_MAX_STR_DESC_SIZ                 0x100
+#define USBD_SUPPORT_USER_STRING              0 
+#define USBD_SELF_POWERED                     1
+#define USBD_DEBUG_LEVEL                      0
+
+/* AUDIO Class Config */
+#define USBD_AUDIO_FREQ                       48000
+
 /* Exported macro ------------------------------------------------------------*/
 /* Memory management macros */
-#define USBD_malloc malloc
-#define USBD_free free
-#define USBD_memset memset
-#define USBD_memcpy memcpy
+#define USBD_malloc               malloc
+#define USBD_free                 free
+#define USBD_memset               memset
+#define USBD_memcpy               memcpy
 
 /* DEBUG macros */
 #if (USBD_DEBUG_LEVEL > 0)
-#define USBD_UsrLog(...) \
-    printf(__VA_ARGS__); \
-    printf("\n");
+#define USBD_UsrLog(...)   printf(__VA_ARGS__);\
+                            printf("\n");
 #else
 #define USBD_UsrLog(...)
 #endif
 
 #if (USBD_DEBUG_LEVEL > 1)
 
-#define USBD_ErrLog(...) \
-    printf("ERROR: ");   \
-    printf(__VA_ARGS__); \
-    printf("\n");
+#define  USBD_ErrLog(...)   printf("ERROR: ") ;\
+                            printf(__VA_ARGS__);\
+                            printf("\n");
 #else
-#define USBD_ErrLog(...)
+#define USBD_ErrLog(...)   
 #endif
 
-#if (USBD_DEBUG_LEVEL > 2)
-#define USBD_DbgLog(...) \
-    printf("DEBUG : ");  \
-    printf(__VA_ARGS__); \
-    printf("\n");
+#if (USBD_DEBUG_LEVEL > 2)                         
+#define  USBD_DbgLog(...)   printf("DEBUG : ") ;\
+                            printf(__VA_ARGS__);\
+                            printf("\n");
 #else
-#define USBD_DbgLog(...)
+#define USBD_DbgLog(...)                         
 #endif
 
 /* Exported functions ------------------------------------------------------- */
-void USBD_error_handler(void);
+
 #endif /* __USBD_CONF_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

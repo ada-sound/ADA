@@ -10,14 +10,14 @@ static void _loop_play_tas3251() {
 
 int main(void) {
     /* init bsp and MMI */
-    if (!bsp_init() || !mmi_init()/* || !usb_init()*/)
+    if (!bsp_init() || !mmi_init() || !usb_init())
         fault();
 
     if (!tas3251_init(0x94, 44100))
         fault();
 
-    tas3251_set_volume(60, left);
-    tas3251_set_volume(60, right);
+    tas3251_set_volume(70, left);
+    tas3251_set_volume(70, right);
     _loop_play_tas3251();
 
     while (1) {
