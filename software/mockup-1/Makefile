@@ -8,11 +8,11 @@ CC=$(PREFIX)gcc
 OBJCOPY=$(PREFIX)objcopy
 
 # ST HAL + LL libs
-STM32CUBE=src/STM32CubeF4/STM32Cube_FW_F4_V1.24.0
+STM32CUBE=STM32CubeF4/STM32Cube_FW_F4_V1.24.0
 HAL=$(STM32CUBE)/Drivers/STM32F4xx_HAL_Driver
 
 # ST USB AUDIO libs
-X-CUBE-USB-AUDIO=src/X-CUBE-USB-AUDIO/STM32CubeExpansion_USBAudioStreaming_V1.0.0/
+X-CUBE-USB-AUDIO=X-CUBE-USB-AUDIO/STM32CubeExpansion_USBAudioStreaming_V1.0.0/
 USB_DEVICE_LIB=$(X-CUBE-USB-AUDIO)/Middlewares/ST/STM32_USB_Device_Library
 
 ## sources and headers
