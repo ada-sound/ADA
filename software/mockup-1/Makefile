@@ -8,8 +8,8 @@ CC=$(PREFIX)gcc
 OBJCOPY=$(PREFIX)objcopy
 
 # Base lib , choice between STM32CubeF4 and X-CUBE-USB-AUDIO
-#STM32CUBE=STM32CubeF4/STM32Cube_FW_F4_V1.24.0
-STM32CUBE=X-CUBE-USB-AUDIO/STM32CubeExpansion_USBAudioStreaming_V1.0.0
+STM32CUBE=STM32CubeF4/STM32Cube_FW_F4_V1.24.0
+#STM32CUBE=X-CUBE-USB-AUDIO/STM32CubeExpansion_USBAudioStreaming_V1.0.0
 CMSIS_DEVICE=STM32CubeF4/STM32Cube_FW_F4_V1.24.0/Drivers/CMSIS/Device/ST/STM32F4xx
 
 # ST HAL + LL libs
@@ -66,7 +66,7 @@ USB_FLAGS=-DUSE_USB_FS
 CFLAGS=$(INC) -DSTM32F407xx -DUSE_HAL_DRIVER $(USB_FLAGS) $(CFLAGS_CORTEX_M4) $(GCCFLAGS) $(GCCDEBUGFLAGS)
 
 LFLAGS=
-LFLAGS+=$(SRC) -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -T $(LINKER_FILE)
+LFLAGS+=$(SRC) -Wl,--start-group -lc -lrdimon -lgcc -lnosys -Wl,--end-group -T $(LINKER_FILE)
 
 ## the project
 ELF=$(OUTPUT_DIR)/$(OUTPUT_NAME).elf

@@ -116,4 +116,4 @@ static int8_t Audio_PeriodicTC(uint8_t cmd) { return 0; }
   */
 static int8_t Audio_GetState(void) { return 0; }
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/qq
