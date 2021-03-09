@@ -63,7 +63,7 @@ PCD_HandleTypeDef hpcd;
   * @param  hpcd: PCD handle
   * @retval None
   */
-void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
+void HAL_PCD_MspInit(PCD_HandleTypeDef* hpcd)
 {
   GPIO_InitTypeDef  GPIO_InitStruct;
   
@@ -341,6 +341,7 @@ USBD_StatusTypeDef  USBD_LL_Init (USBD_HandleTypeDef *pdev)
   /* Change Systick prioity */
   NVIC_SetPriority (SysTick_IRQn, 0);  
   
+#ifdef USE_USB_FS
   /*Set LL Driver parameters */
   hpcd.Instance = USB_OTG_FS;
   hpcd.Init.dev_endpoints = 4; 
@@ -359,7 +360,33 @@ USBD_StatusTypeDef  USBD_LL_Init (USBD_HandleTypeDef *pdev)
   
   HAL_PCDEx_SetRxFiFo(&hpcd, 0x80);
   HAL_PCDEx_SetTxFiFo(&hpcd, 0, 0x60);
-  
+#endif
+
+#ifdef USE_USB_HS
+  /* Set LL Driver parameters */
+  hpcd.Instance = USB_OTG_HS;
+  hpcd.Init.dev_endpoints = 6;
+  hpcd.Init.use_dedicated_ep1 = 0;
+  hpcd.Init.dma_enable = 1;
+  hpcd.Init.low_power_enable = 0;
+#ifdef USE_USB_HS_IN_FS
+  hpcd.Init.phy_itface = PCD_PHY_EMBEDDED;
+  hpcd.Init.speed = PCD_SPEED_HIGH_IN_FULL;
+#else
+  hpcd.Init.phy_itface = PCD_PHY_ULPI;
+  hpcd.Init.speed = PCD_SPEED_HIGH;
+#endif
+  hpcd.Init.Sof_enable = 0;
+  hpcd.Init.vbus_sensing_enable = 1;
+  /* Link The driver to the stack */
+  hpcd.pData = pdev;
+  pdev->pData = &hpcd;
+  /* Initialize LL Driver */
+  HAL_PCD_Init(&hpcd);
+  HAL_PCDEx_SetRxFiFo(&hpcd, 0x100);
+  HAL_PCDEx_SetTxFiFo(&hpcd, 0, 0x200);
+#endif
+
   return USBD_OK;
 }
 

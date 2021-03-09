@@ -3,7 +3,6 @@
 #include <stm32f4xx_hal.h>
 
 #include "usbd_core.h"
-#include "usbd_desc.h"
 #include "usbd_audio.h"
 
 
@@ -168,20 +167,30 @@ void mmi_heartbeat() {
     HAL_Delay(1000);
 }
 
-USBD_HandleTypeDef USBD_Device;
+static USBD_HandleTypeDef USBD_Device;
 extern PCD_HandleTypeDef hpcd;
 
 bool usb_init(void) {
     /* Init Device Library,Add Supported Class and Start the library*/
+    extern USBD_DescriptorsTypeDef AUDIO_Desc;
     USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
-
     USBD_RegisterClass(&USBD_Device, &USBD_AUDIO);
+    return true;
+}
 
-    extern USBD_AUDIO_ItfTypeDef USBD_AUDIO_fops;
-    USBD_AUDIO_RegisterInterface(&USBD_Device, &USBD_AUDIO_fops);
-
+bool usb_start(USBD_AUDIO_ItfTypeDef* pUSBD_AUDIO_fops) {
+    USBD_AUDIO_RegisterInterface(&USBD_Device, pUSBD_AUDIO_fops);
     return USBD_Start(&USBD_Device) == USBD_OK;
 }
+
+void usb_transfer_complete(void) {
+    USBD_AUDIO_Sync(&USBD_Device, AUDIO_OFFSET_FULL);
+}
+
+void usb_half_transfer_complete(void) {
+    USBD_AUDIO_Sync(&USBD_Device, AUDIO_OFFSET_HALF);
+}
+
 
 #ifdef USE_USB_FS
 void OTG_FS_IRQHandler(void)
@@ -189,7 +198,7 @@ void OTG_FS_IRQHandler(void)
 void OTG_HS_IRQHandler(void)
 #endif
 {
-  HAL_PCD_IRQHandler(&hpcd);
+    HAL_PCD_IRQHandler(&hpcd);
 }
 
 void fault() {
@@ -232,10 +241,6 @@ void DebugMon_Handler(void) {}
 void PendSV_Handler(void) {}
 
 void SysTick_Handler(void) { HAL_IncTick(); }
-
-char* _sbrk(__attribute__((unused)) int incr) {
-    return (char*)0;
-}
 
 /** I2C
  */

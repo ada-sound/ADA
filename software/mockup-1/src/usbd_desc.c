@@ -44,21 +44,26 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_core.h"
-#include "usbd_desc.h"
 #include "usbd_conf.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define USBD_VID                      0x0483
-#define USBD_PID                      0x5730
-#define USBD_LANGID_STRING            0x409
-#define USBD_MANUFACTURER_STRING      "STMicroelectronics"
-#define USBD_PRODUCT_HS_STRING        "STM32 AUDIO Streaming in HS Mode"
-#define USBD_PRODUCT_FS_STRING        "STM32 AUDIO Streaming in FS Mode"
-#define USBD_CONFIGURATION_HS_STRING  "AUDIO Config"
-#define USBD_INTERFACE_HS_STRING      "AUDIO Interface"
-#define USBD_CONFIGURATION_FS_STRING  "AUDIO Config"
-#define USBD_INTERFACE_FS_STRING      "AUDIO Interface"
+
+/* STMicroelectronics Audio Speaker */
+//#define USBD_VID 0x0483
+//#define USBD_PID 0x5730
+/* tricking USB enum so clients use the provided strings instead of the static vendor ones */
+#define USBD_VID 0xffff
+#define USBD_PID 0xffff
+
+#define USBD_LANGID_STRING 0x409
+#define USBD_MANUFACTURER_STRING "ADA"
+#define USBD_PRODUCT_HS_STRING "ADA v0.1"
+#define USBD_PRODUCT_FS_STRING "ADA v0.1"
+#define USBD_CONFIGURATION_HS_STRING "ADA v0.1 Audio Config"
+#define USBD_INTERFACE_HS_STRING "ADA v0.1 Audio Interface"
+#define USBD_CONFIGURATION_FS_STRING "ADA v0.1 Audio Config"
+#define USBD_INTERFACE_FS_STRING "ADA v0.1 Audio Interface"
 
 /* Private macro -------------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -120,10 +125,10 @@ __ALIGN_BEGIN uint8_t USBD_LangIDDesc[USB_LEN_LANGID_STR_DESC] __ALIGN_END = {
   HIBYTE(USBD_LANGID_STRING), 
 };
 
-
 #if defined ( __ICCARM__ ) /*!< IAR Compiler */
   #pragma data_alignment=4   
 #endif
+#define  USB_SIZ_STRING_SERIAL       0x1A
 __ALIGN_BEGIN uint8_t USBD_StringSerial[USB_SIZ_STRING_SERIAL] __ALIGN_END =
 {
   USB_SIZ_STRING_SERIAL,      
@@ -267,13 +272,10 @@ uint8_t *USBD_AUDIO_InterfaceStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *le
   */
 static void Get_SerialNum(void)
 {
-  uint32_t deviceserial0, deviceserial1, deviceserial2;
+  uint32_t deviceserial0, deviceserial1;
   
-  deviceserial0 = *(uint32_t*)DEVICE_ID1;
-  deviceserial1 = *(uint32_t*)DEVICE_ID2;
-  deviceserial2 = *(uint32_t*)DEVICE_ID3;
-  
-  deviceserial0 += deviceserial2;
+  deviceserial0 = 0;
+  deviceserial1 = 1;
   
   if (deviceserial0 != 0)
   {

@@ -1,6 +1,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "usbd_def.h"
+#include "usbd_audio.h"
+
 /* BSP */
 bool bsp_init(void);
 void fault(void);
@@ -11,7 +14,10 @@ void mmi_heartbeat(void);
 
 /* usb */
 bool usb_init(void);
-bool usb_start(void);
+bool usb_start(USBD_AUDIO_ItfTypeDef* pUSBD_AUDIO_fops);
+void usb_transfer_complete(void);
+void usb_half_transfer_complete(void);
+
 
 /* i2c */
 void i2c_init();
