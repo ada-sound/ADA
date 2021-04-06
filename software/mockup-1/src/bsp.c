@@ -2,9 +2,8 @@
 
 #include <stm32f4xx_hal.h>
 
-#include "usbd_core.h"
 #include "usbd_audio.h"
-
+#include "usbd_core.h"
 
 #define LED4_PIN GPIO_PIN_12
 #define LED4_GPIO_PORT GPIOD
@@ -118,7 +117,7 @@ static void _system_clock_config(void) {
 }
 
 /* CS43L22 (the STM32F4-Disco audio codec) reset pin */
-static bool _cs43l22_shutdown(void) {
+bool cs43l22_enable(bool enable) {
     GPIO_InitTypeDef GPIO_InitStruct;
 
     __HAL_RCC_GPIOD_CLK_ENABLE();
@@ -133,19 +132,20 @@ static bool _cs43l22_shutdown(void) {
     /* Power Down the codec */
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4, GPIO_PIN_RESET);
 
-    /* Wait for a delay to insure registers erasing */
-    HAL_Delay(5);
+    if (enable) {
+        /* Wait for a delay to insure registers erasing */
+        HAL_Delay(5);
+        /* Power Up */
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4, GPIO_PIN_SET);
+    }
 
     return true;
 }
 
 bool bsp_init(void) {
-    if (HAL_Init() != HAL_OK)
-        return false;
+    if (HAL_Init() != HAL_OK) return false;
     _system_clock_config();
-
-    /* switch off the codec cs43l22 */
-    return _cs43l22_shutdown();
+    return true;
 }
 
 bool mmi_init() {
@@ -183,14 +183,9 @@ bool usb_start(USBD_AUDIO_ItfTypeDef* pUSBD_AUDIO_fops) {
     return USBD_Start(&USBD_Device) == USBD_OK;
 }
 
-void usb_transfer_complete(void) {
-    USBD_AUDIO_Sync(&USBD_Device, AUDIO_OFFSET_FULL);
-}
+void usb_transfer_complete(void) { USBD_AUDIO_Sync(&USBD_Device, AUDIO_OFFSET_FULL); }
 
-void usb_half_transfer_complete(void) {
-    USBD_AUDIO_Sync(&USBD_Device, AUDIO_OFFSET_HALF);
-}
-
+void usb_half_transfer_complete(void) { USBD_AUDIO_Sync(&USBD_Device, AUDIO_OFFSET_HALF); }
 
 #ifdef USE_USB_FS
 void OTG_FS_IRQHandler(void)
@@ -500,6 +495,11 @@ bool i2s_init(uint32_t audio_freq, void (*transfer_complete_dma)()) {
     }
 }
 
+void i2s_deinit(void) {
+    /* Call the Media layer stop function */
+    HAL_I2S_DMAStop(&hAudioOutI2s);
+}
+
 void i2s_transmit_dma(uint16_t* audio_current_pos, uint16_t transmit_size) {
     HAL_I2S_Transmit_DMA(&hAudioOutI2s, audio_current_pos, transmit_size);
 }
@@ -509,7 +509,8 @@ void i2s_stop_dma() { HAL_I2S_DMAStop(&hAudioOutI2s); }
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef* hi2s) {
     if (hi2s->Instance == I2S3) {
         /* Call the user function which will manage directly transfer complete */
-        (*_i2s_transfer_complete_dma)();
+        if (_i2s_transfer_complete_dma = NULL)
+            (*_i2s_transfer_complete_dma)();
     }
 }
 

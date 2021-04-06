@@ -21,8 +21,10 @@ SRC=src/startup_stm32f407xx.s \
 	src/system_stm32f4xx.c \
 	src/main.c \
 	src/ada_v0-1.c \
+	src/f4-disco.c \
 	src/bsp.c \
 	src/tas3251.c \
+	src/cs43l22.c \
 	src/audio_sample.c \
 	src/usbd_conf.c \
 	src/usbd_desc.c \

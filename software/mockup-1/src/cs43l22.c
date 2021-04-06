@@ -86,6 +86,12 @@
   * @{
   */
 
+#define DMA_MAX_SZE 0xFFFF
+
+/* Audio status definition */
+#define AUDIODATA_SIZE 2 /* 16-bits audio data size */
+
+/* Variables used in normal mode to manage audio file during DMA transfer */
 static uint8_t Is_cs43l22_Stop = 1;
 
 volatile uint8_t OutputDev = 0;
@@ -109,6 +115,9 @@ static uint8_t AUDIO_IO_Read(uint8_t Addr, uint8_t Reg);
   * @{
   */ 
 
+static void _dma_transfer_complete() {
+}
+
 /**
   * @brief Initializes the audio codec and the control interface.
   * @param DeviceAddr: Device address on communication Bus.   
@@ -120,7 +129,7 @@ static uint8_t AUDIO_IO_Read(uint8_t Addr, uint8_t Reg);
 uint32_t cs43l22_Init(uint16_t DeviceAddr, uint16_t OutputDevice, uint8_t Volume, uint32_t AudioFreq)
 {
   uint32_t counter = 0;
-  
+
   AUDIO_IO_Init();
 
   /* Keep Codec powered OFF */
@@ -190,7 +199,7 @@ uint32_t cs43l22_Init(uint16_t DeviceAddr, uint16_t OutputDevice, uint8_t Volume
   /* Adjust PCM volume level */
   counter += CODEC_IO_Write(DeviceAddr, CS43L22_REG_PCMA_VOL, 0x0A);
   counter += CODEC_IO_Write(DeviceAddr, CS43L22_REG_PCMB_VOL, 0x0A);
-  
+
   /* Return communication control value */
   return counter;  
 }
@@ -250,6 +259,7 @@ uint32_t cs43l22_Play(uint16_t DeviceAddr, uint16_t* pBuffer, uint16_t Size)
 {
   uint32_t counter = 0;
   
+  
   if(Is_cs43l22_Stop == 1)
   {
     /* Enable the digital soft ramp */
@@ -262,7 +272,7 @@ uint32_t cs43l22_Play(uint16_t DeviceAddr, uint16_t* pBuffer, uint16_t Size)
     counter += CODEC_IO_Write(DeviceAddr, CS43L22_REG_POWER_CTL1, 0x9E);  
     Is_cs43l22_Stop = 0;
   }
-  
+
   /* Return communication control value */
   return counter;  
 }
@@ -514,7 +524,7 @@ void AUDIO_IO_Init(void)
   HAL_GPIO_WritePin(AUDIO_RESET_GPIO, AUDIO_RESET_PIN, GPIO_PIN_SET);
   
   /* Wait for a delay to insure registers erasing */
-  HAL_Delay(5); 
+  HAL_Delay(5);
 }
 
 /**

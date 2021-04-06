@@ -25,13 +25,17 @@ static void _loop_play_tas3251() {
 static const uint16_t _i2c_device_address = 0x94;
 
 bool ada_v01_init(void) {
+    /* disable codec because it uses the same i2s than ada v0.1 */
+    if (!cs43l22_enable(false))
+      return false;
+
     if (!tas3251_init(_i2c_device_address, 48000))
         return false;
 
     tas3251_set_volume(0, left);
     tas3251_set_volume(0, right);
 
-    return usb_start(&USBD_AUDIO_fops);
+    return usb_init() && usb_start(&USBD_AUDIO_fops);
 }
 
 /**
@@ -116,4 +120,4 @@ static int8_t Audio_PeriodicTC(uint8_t cmd) { return 0; }
   */
 static int8_t Audio_GetState(void) { return 0; }
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/qq
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
